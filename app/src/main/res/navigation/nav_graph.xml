@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
     app:startDestination="@id/loginFragment">
 
     <fragment
         android:id="@+id/loginFragment"
         android:name="com.example.bookswapkz.fragments.LoginFragment"
-        android:label="Login">
+        android:label="Login"
+        tools:layout="@layout/fragment_login">
         <action
             android:id="@+id/action_login_to_register"
             app:destination="@id/registerFragment" />
@@ -21,10 +23,13 @@
     <fragment
         android:id="@+id/registerFragment"
         android:name="com.example.bookswapkz.fragments.RegisterFragment"
-        android:label="Register">
+        android:label="Register"
+        tools:layout="@layout/fragment_register">
         <action
             android:id="@+id/action_register_to_login"
-            app:destination="@id/loginFragment" />
+            app:destination="@id/loginFragment"
+            app:popUpTo="@id/registerFragment"
+            app:popUpToInclusive="true"/>
         <action
             android:id="@+id/action_register_to_home"
             app:destination="@id/homeFragment"
@@ -35,7 +40,8 @@
     <fragment
         android:id="@+id/homeFragment"
         android:name="com.example.bookswapkz.fragments.HomeFragment"
-        android:label="Home">
+        android:label="Home"
+        tools:layout="@layout/fragment_home">
         <action
             android:id="@+id/action_home_to_addBook"
             app:destination="@id/addBookFragment" />
@@ -52,7 +58,8 @@
     <fragment
         android:id="@+id/addBookFragment"
         android:name="com.example.bookswapkz.fragments.AddBookFragment"
-        android:label="Add Book">
+        android:label="Add Book"
+        tools:layout="@layout/fragment_add_book">
         <action
             android:id="@+id/action_addBook_to_home"
             app:destination="@id/homeFragment"
@@ -68,7 +75,8 @@
     <fragment
         android:id="@+id/myBooksFragment"
         android:name="com.example.bookswapkz.fragments.MyBooksFragment"
-        android:label="My Books">
+        android:label="My Books"
+        tools:layout="@layout/fragment_my_books">
         <action
             android:id="@+id/action_myBooks_to_bookDetail"
             app:destination="@id/bookDetailFragment" />
@@ -77,7 +85,8 @@
     <fragment
         android:id="@+id/profileFragment"
         android:name="com.example.bookswapkz.fragments.ProfileFragment"
-        android:label="Profile">
+        android:label="Profile"
+        tools:layout="@layout/fragment_profile">
         <action
             android:id="@+id/action_profile_to_login"
             app:destination="@id/loginFragment"
@@ -88,10 +97,24 @@
     <fragment
         android:id="@+id/bookDetailFragment"
         android:name="com.example.bookswapkz.fragments.BookDetailFragment"
-        android:label="Book Detail">
+        android:label="Book Detail"
+        tools:layout="@layout/fragment_book_detail">
         <argument
             android:name="book"
             app:argType="com.example.bookswapkz.models.Book" />
     </fragment>
 
+    <action android:id="@+id/action_global_loginFragment"
+        app:destination="@id/loginFragment"
+        app:launchSingleTop="true"
+        app:popUpTo="@id/nav_graph"
+        app:popUpToInclusive="true" />
+
+    <action android:id="@+id/action_global_homeFragment"
+        app:destination="@id/homeFragment"
+        app:launchSingleTop="true"
+        app:popUpTo="@id/nav_graph"
+        app:popUpToInclusive="true" />
+
 </navigation>
+

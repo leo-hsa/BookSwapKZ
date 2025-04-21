@@ -1,67 +1,192 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:padding="16dp"
+    tools:context=".fragments.ProfileFragment">
+
+    <!-- Имя -->
+    <TextView
+        android:id="@+id/nameLabelTextView"
+        style="@style/ProfileLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Имя:"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/nameTextView"
+        style="@style/ProfileValue"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:hint="@string/name_hint"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBaseline_toBaselineOf="@id/nameLabelTextView"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/guideline"
+        tools:text="Иван Иванов" />
+
+    <!-- Никнейм -->
+    <TextView
+        android:id="@+id/nicknameLabelTextView"
+        style="@style/ProfileLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Никнейм:"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/nameLabelTextView" />
 
     <TextView
         android:id="@+id/nicknameTextView"
+        style="@style/ProfileValue"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:hint="@string/nickname_hint"
-        app:layout_constraintTop_toBottomOf="@id/nameTextView"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBaseline_toBaselineOf="@id/nicknameLabelTextView"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="8dp" />
+        app:layout_constraintStart_toEndOf="@id/guideline"
+        tools:text="ivan_cool" />
+
+    <!-- Город -->
+    <TextView
+        android:id="@+id/cityLabelTextView"
+        style="@style/ProfileLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Город:"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/nicknameLabelTextView" />
 
     <TextView
         android:id="@+id/cityTextView"
+        style="@style/ProfileValue"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:hint="@string/city_hint"
-        app:layout_constraintTop_toBottomOf="@id/nicknameTextView"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBaseline_toBaselineOf="@id/cityLabelTextView"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="8dp" />
+        app:layout_constraintStart_toEndOf="@id/guideline"
+        tools:text="Алматы" />
+
+    <!-- ДОБАВЛЕНО: Улица -->
+    <TextView
+        android:id="@+id/streetLabelTextView"
+        style="@style/ProfileLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Улица:"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/cityLabelTextView" />
+
+    <TextView
+        android:id="@+id/streetTextView"
+        style="@style/ProfileValue"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintBaseline_toBaselineOf="@id/streetLabelTextView"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/guideline"
+        tools:text="ул. Абая" />
+
+    <!-- ДОБАВЛЕНО: Номер дома -->
+    <TextView
+        android:id="@+id/houseNumberLabelTextView"
+        style="@style/ProfileLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Дом/кв.:"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/streetLabelTextView" />
+
+    <TextView
+        android:id="@+id/houseNumberTextView"
+        style="@style/ProfileValue"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintBaseline_toBaselineOf="@id/houseNumberLabelTextView"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/guideline"
+        tools:text="д. 10, кв. 5" />
+
+    <!-- Возраст -->
+    <TextView
+        android:id="@+id/ageLabelTextView"
+        style="@style/ProfileLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Возраст:"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/houseNumberLabelTextView" />
 
     <TextView
         android:id="@+id/ageTextView"
+        style="@style/ProfileValue"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:hint="@string/age_hint"
-        app:layout_constraintTop_toBottomOf="@id/cityTextView"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBaseline_toBaselineOf="@id/ageLabelTextView"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="8dp" />
+        app:layout_constraintStart_toEndOf="@id/guideline"
+        tools:text="30" />
+
+    <!-- Телефон -->
+    <TextView
+        android:id="@+id/phoneLabelTextView"
+        style="@style/ProfileLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Телефон:"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/ageLabelTextView" />
 
     <TextView
         android:id="@+id/phoneTextView"
+        style="@style/ProfileValue"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:hint="@string/phone_hint"
-        app:layout_constraintTop_toBottomOf="@id/ageTextView"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBaseline_toBaselineOf="@id/phoneLabelTextView"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="8dp" />
+        app:layout_constraintStart_toEndOf="@id/guideline"
+        tools:text="+7 777 123 4567" />
 
+    <!-- Кнопка Выхода -->
     <Button
         android:id="@+id/logoutButton"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
         android:text="@string/logout_button"
-        app:layout_constraintTop_toBottomOf="@id/phoneTextView"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="16dp" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/phoneLabelTextView" />
+
+    <!-- Вспомогательная линия для выравнивания значений -->
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.3" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Добавьте в res/values/styles.xml (или themes.xml) -->
+    <!--
+    <style name="ProfileLabel">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">?android:attr/textColorSecondary</item>
+    </style>
+
+    <style name="ProfileValue">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginStart">8dp</item>
+        <item name="android:textColor">?android:attr/textColorPrimary</item>
+    </style>
+    -->
