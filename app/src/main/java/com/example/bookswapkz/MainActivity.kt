@@ -2,58 +2,53 @@ package com.example.bookswapkz
 
 import android.os.Bundle
 import android.util.Log
-import android.widget.TextView // Добавьте этот импорт, если еще нет
+// import android.widget.TextView // Не используется явно, можно удалить
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar // Добавьте этот импорт
-import androidx.drawerlayout.widget.DrawerLayout // Добавьте этот импорт
+import androidx.appcompat.widget.Toolbar
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.navigation.findNavController
-import androidx.navigation.ui.AppBarConfiguration // Добавьте этот импорт
-import androidx.navigation.ui.navigateUp // Добавьте этот импорт
-import androidx.navigation.ui.setupActionBarWithNavController // Добавьте этот импорт
+import androidx.navigation.ui.AppBarConfiguration
+import androidx.navigation.ui.navigateUp
+import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
-// import com.google.android.material.bottomnavigation.BottomNavigationView // Этот импорт больше не нужен
-import com.google.android.material.navigation.NavigationView // Добавьте этот импорт
+import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.FirebaseDatabase
-// Другие ваши импорты...
-
-import com.example.bookswapkz.R // Убедитесь, что R импортирован
+// FirebaseDatabase импорт и использование удалены
+import com.example.bookswapkz.R
 
 class MainActivity : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
-    private lateinit var database: FirebaseDatabase
+    // Переменная database удалена
     private val TAG = "MainActivity"
-    private lateinit var appBarConfiguration: AppBarConfiguration // Добавляем переменную для AppBarConfiguration
-    private lateinit var drawerLayout: DrawerLayout // Добавляем переменную для DrawerLayout
+    private lateinit var appBarConfiguration: AppBarConfiguration
+    private lateinit var drawerLayout: DrawerLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         auth = FirebaseAuth.getInstance()
-        database = FirebaseDatabase.getInstance()
+        // Инициализация database удалена
 
-        // Инициализируем DrawerLayout
-        drawerLayout = findViewById(R.id.drawer_layout) // Находим DrawerLayout по ID
-
-        // Находим Toolbar и устанавливаем его как ActionBar
+        drawerLayout = findViewById(R.id.drawer_layout)
         val toolbar: Toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
-        supportActionBar?.setDisplayShowTitleEnabled(false) // Скрываем стандартный заголовок, так как у вас свой TextView
+        supportActionBar?.setDisplayShowTitleEnabled(false)
 
         Log.d(TAG, "Starting anonymous sign-in")
         auth.signInAnonymously()
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
                     Log.d(TAG, "Sign-in successful")
-                    Toast.makeText(this, "Firebase подключен!", Toast.LENGTH_SHORT).show()
-
-                    // Настройка навигации после успешной авторизации
+                    // Убираем Toast, так как вход анонимный и невидим для пользователя
+                    // Toast.makeText(this, "Firebase подключен!", Toast.LENGTH_SHORT).show()
                     setupNavigation()
                 } else {
-                    Log.e(TAG, "Sign-in failed: ${task.exception?.message}")
-                    Toast.makeText(this, "Ошибка: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                    Log.e(TAG, "Anonymous sign-in failed: ${task.exception?.message}")
+                    // Показываем ошибку только если она важна для пользователя
+                    // Toast.makeText(this, "Ошибка подключения: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                    // Возможно, здесь нужно обработать ситуацию, когда анонимный вход не удался
                 }
             }
     }
@@ -61,28 +56,19 @@ class MainActivity : AppCompatActivity() {
     private fun setupNavigation() {
         val navController = findNavController(R.id.nav_host_fragment)
 
-        // Определяем пункты меню верхнего уровня для DrawerLayout
-        // Убедитесь, что ID в nav_graph.xml соответствуют ID в nav_menu.xml
+        // Убедитесь, что ID здесь соответствуют вашему nav_graph и nav_menu
         appBarConfiguration = AppBarConfiguration(
             setOf(
-                R.id.homeFragment, R.id.myBooksFragment, R.id.profileFragment // Замените на реальные ID ваших фрагментов из nav_graph и nav_menu
-            ), drawerLayout // Передаем DrawerLayout
+                R.id.homeFragment, R.id.myBooksFragment, R.id.profileFragment
+            ), drawerLayout
         )
 
-        // Настраиваем ActionBar (Toolbar) для работы с NavController и DrawerLayout
         setupActionBarWithNavController(navController, appBarConfiguration)
 
-        // Настраиваем NavigationView (боковое меню) для работы с NavController
-        val navView: NavigationView = findViewById(R.id.nav_view) // Находим NavigationView по ID
+        val navView: NavigationView = findViewById(R.id.nav_view)
         navView.setupWithNavController(navController)
-
-        /* Удаляем код для BottomNavigationView:
-        val bottomNavigationView = findViewById<BottomNavigationView>(R.id.bottom_navigation)
-        bottomNavigationView.setupWithNavController(navController)
-        */
     }
 
-    // Переопределяем этот метод, чтобы кнопка "назад" и иконка гамбургера работали с NavController
     override fun onSupportNavigateUp(): Boolean {
         val navController = findNavController(R.id.nav_host_fragment)
         return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
