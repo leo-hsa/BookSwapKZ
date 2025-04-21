@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Book Swap KZ</string>
+    <string name="name_hint">Имя</string>
+    <string name="nickname_hint">Никнейм</string>
+    <string name="password_hint">Пароль</string>
+    <string name="confirm_password_hint">Подтвердите пароль</string>
+    <string name="age_hint">Возраст</string>
+    <string name="phone_hint">Телефон</string>
+    <string name="city_hint">Город</string>
+    <string name="register_button">Зарегистрироваться</string>
+    <string name="login_button">Войти</string>
+
+    <!-- Используется в fragment_login.xml -->
+    <string name="register_link"><u>Нет аккаунта? Зарегистрироваться</u></string>
+
+    <!-- Используется в fragment_register.xml -->
+    <string name="login_link"><u>Уже есть аккаунт? Войти</u></string>
+
+    <string name="title_hint">Название книги</string>
+    <string name="author_hint">Автор</string>
+    <string name="condition_hint">Состояние</string>
+    <string name="add_book_button">Добавить</string>
+    <string name="call_button">Позвонить</string>
+    <string name="book_image">Изображение книги</string>
+
+    <!-- Используется в nav_menu.xml -->
+    <string name="menu_home">Главная</string>
+    <string name="menu_my_books">Мои книги</string>
+    <string name="menu_profile">Профиль</string>
+    <string name="menu_logout">Выйти</string>
+
+    <!-- Используется в fragment_profile.xml -->
+    <string name="logout_button">Выйти</string>
+
+    <!-- Используется в FAB HomeFragment -->
+    <string name="add_book">Добавить книгу</string>
+    <!-- Используется в HomeFragment, когда список пуст -->
+    <string name="no_books_found">Книги не найдены. Добавьте первую!</string>
+    <!-- Используется в fragment_add_book.xml -->
+    <string name="select_image">Выбрать изображение</string>
+</resources>

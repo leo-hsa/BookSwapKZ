@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true">
+        <shape>
+            <solid android:color="#00FF00" /> <!-- Зелёный при нажатии -->
+            <corners android:radius="8dp" />
+        </shape>
+    </item>
+    <item android:state_focused="true">
+        <shape>
+            <solid android:color="#00FF00" /> <!-- Зелёный при фокусе -->
+            <corners android:radius="8dp" />
+        </shape>
+    </item>
+    <item>
+        <shape>
+            <solid android:color="#6200EE" /> <!-- Обычный цвет (по умолчанию, например, фиолетовый) -->
+            <corners android:radius="8dp" />
+        </shape>
+    </item>
+</selector>
