@@ -1,15 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
-        android:id="@+id/nav_home"
+        android:id="@+id/homeFragment"
+        android:icon="@drawable/ic_home"
         android:title="@string/menu_home" />
+
     <item
-        android:id="@+id/nav_my_books"
+        android:id="@+id/myBooksFragment"
+        android:icon="@drawable/ic_my_books"
         android:title="@string/menu_my_books" />
+
     <item
-        android:id="@+id/nav_profile"
+        android:id="@+id/rentFragment"
+        android:icon="@drawable/ic_rent"
+        android:title="@string/menu_rent" />
+
+    <item
+        android:id="@+id/profileFragment"
+        android:icon="@drawable/ic_profile"
         android:title="@string/menu_profile" />
-    <item
-        android:id="@+id/nav_logout"
-        android:title="@string/menu_logout" />
-</menu>
+</menu> 

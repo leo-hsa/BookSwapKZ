@@ -4,6 +4,8 @@ plugins {
     id("androidx.navigation.safeargs.kotlin") version "2.8.3"
     id("kotlin-parcelize")
     id("com.google.gms.google-services")
+    id("com.google.dagger.hilt.android")
+    id("kotlin-kapt")
 }
 
 android {
@@ -54,7 +56,7 @@ dependencies {
     implementation("com.google.firebase:firebase-auth-ktx:23.0.0")
     // implementation("com.google.firebase:firebase-database-ktx:21.0.0") // Удалите, если используете Firestore
     implementation("com.google.firebase:firebase-firestore-ktx:25.0.0") // Firestore
-    implementation("com.google.firebase:firebase-storage-ktx:21.0.0") // Storage
+
 
     // Glide
     implementation("com.github.bumptech.glide:glide:4.16.0")
@@ -68,6 +70,17 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     // Multidex
     implementation("androidx.multidex:multidex:2.0.1")
+    implementation(libs.firebase.storage.ktx)
+
+    // Dagger Hilt
+    implementation("com.google.dagger:hilt-android:2.50")
+    kapt("com.google.dagger:hilt-android-compiler:2.50")
+    implementation("androidx.hilt:hilt-navigation-fragment:1.2.0")
+    implementation("androidx.hilt:hilt-work:1.2.0")
+    kapt("androidx.hilt:hilt-compiler:1.2.0")
+
+    // WorkManager
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
 
     // Тестовые зависимости (добавьте, если нужны)
     // testImplementation("junit:junit:4.13.2")

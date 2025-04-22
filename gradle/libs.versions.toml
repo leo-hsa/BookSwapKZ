@@ -15,6 +15,7 @@ android-gradle-plugin = "8.7.0"
 kotlin = "2.0.20"
 navigation-fragment-ktx = "2.8.9"
 navigation-ui-ktx = "2.8.9"
+firebase-storage-ktx = "21.0.1"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
@@ -33,6 +34,7 @@ firebase-auth = { module = "com.google.firebase:firebase-auth", version.ref = "f
 firebase-database = { module = "com.google.firebase:firebase-database", version.ref = "firebase-database" }
 navigation-fragment-ktx = { group = "androidx.navigation", name = "navigation-fragment-ktx", version.ref = "navigation-fragment-ktx" }
 navigation-ui-ktx = { group = "androidx.navigation", name = "navigation-ui-ktx", version.ref = "navigation-ui-ktx" }
+firebase-storage-ktx = { group = "com.google.firebase", name = "firebase-storage-ktx", version.ref = "firebase-storage-ktx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "android-gradle-plugin" }

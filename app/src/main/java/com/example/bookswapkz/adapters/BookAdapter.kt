@@ -1,30 +1,33 @@
-package com.example.bookswapkz.adapters // Убедитесь, что пакет правильный
+package com.example.bookswapkz.adapters
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
-// УДАЛИТЕ: import androidx.navigation.findNavController - навигация должна быть во фрагменте
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+
+import com.example.bookswapkz.R
 import com.example.bookswapkz.databinding.ItemBookBinding
-// УДАЛИТЕ: import com.example.bookswapkz.fragments.HomeFragmentDirections - адаптер не должен знать о фрагментах
 import com.example.bookswapkz.models.Book
 
 
-// ДОБАВЬТЕ ПАРАМЕТР КОНСТРУКТОРА: private val onItemClicked: (Book) -> Unit
 class BookAdapter(private val onItemClicked: (Book) -> Unit) : ListAdapter<Book, BookAdapter.BookViewHolder>(BookDiffCallback()) {
 
-    // Передаем лямбду в конструктор ViewHolder
     class BookViewHolder(
         private val binding: ItemBookBinding,
-        private val onItemClicked: (Book) -> Unit // Добавляем параметр и сюда
+        private val onItemClicked: (Book) -> Unit
     ) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(book: Book) {
-            binding.titleTextView.text = book.title
-            binding.authorTextView.text = book.author
-            binding.conditionTextView.text = book.condition
-            // Теперь при клике вызываем лямбду, переданную из адаптера
+            binding.bookTitle.text = book.title
+            binding.bookAuthor.text = book.author
+            binding.statusChip.text = if (book.isRented) "Rented" else "Available"
+            binding.ownerName.text = "User ${book.userId}" // Temporary solution until we have user names
+
+            binding.bookCover.setImageResource(R.drawable.book_cover_placeholder)
+            binding.bookCover.isVisible = true
+
             binding.root.setOnClickListener {
                 onItemClicked(book)
             }
@@ -33,7 +36,6 @@ class BookAdapter(private val onItemClicked: (Book) -> Unit) : ListAdapter<Book,
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BookViewHolder {
         val binding = ItemBookBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        // Передаем лямбду, полученную адаптером, в создаваемый ViewHolder
         return BookViewHolder(binding, onItemClicked)
     }
 
@@ -44,11 +46,10 @@ class BookAdapter(private val onItemClicked: (Book) -> Unit) : ListAdapter<Book,
 
 class BookDiffCallback : DiffUtil.ItemCallback<Book>() {
     override fun areItemsTheSame(oldItem: Book, newItem: Book): Boolean {
-        return oldItem.id == newItem.id // Используем id, как исправили ранее
+        return oldItem.id == newItem.id
     }
 
     override fun areContentsTheSame(oldItem: Book, newItem: Book): Boolean {
         return oldItem == newItem
     }
 }
-

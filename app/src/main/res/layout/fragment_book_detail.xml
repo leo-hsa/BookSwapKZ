@@ -1,76 +1,168 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="@dimen/activity_horizontal_margin">
+    android:padding="16dp"
+    tools:context=".fragments.BookDetailFragment">
 
     <ImageView
-        android:id="@+id/bookImage"
-        android:layout_width="0dp"
-        android:layout_height="200dp"
-        android:contentDescription="@string/book_image"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:id="@+id/bookImageDetail"
+        android:layout_width="120dp"
+        android:layout_height="180dp"
+        android:scaleType="centerCrop"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        tools:src="@drawable/ic_book_placeholder" />
 
     <TextView
-        android:id="@+id/titleTextView"
+        android:id="@+id/titleDetailTextView"
         android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/bookImageDetail"
+        app:layout_constraintTop_toTopOf="@+id/bookImageDetail"
+        tools:text="Очень Длинное Название Книги Здесь" />
+
+    <TextView
+        android:id="@+id/authorDetailTextView"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/titleDetailTextView"
+        app:layout_constraintTop_toBottomOf="@+id/titleDetailTextView"
+        tools:text="Автор Авторович" />
+
+    <TextView
+        android:id="@+id/conditionLabelTextView"
+        style="@style/ProfileLabel"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:textAppearance="@style/TextAppearance.AppCompat.Title"
-        android:fontFamily="@font/lobster_regular"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:text="Состояние:"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/bookImage"
-        app:autoSizeTextType="uniform"
-        app:emojiCompatEnabled="true" />
+        app:layout_constraintTop_toBottomOf="@+id/bookImageDetail" />
 
     <TextView
-        android:id="@+id/authorTextView"
+        android:id="@+id/conditionDetailTextView"
+        style="@style/ProfileValue"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+        app:layout_constraintBaseline_toBaselineOf="@id/conditionLabelTextView"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/titleTextView"
-        app:autoSizeTextType="uniform"
-        app:emojiCompatEnabled="true" />
+        app:layout_constraintStart_toEndOf="@id/guidelineDetail"
+        tools:text="Отличное" />
 
     <TextView
-        android:id="@+id/conditionTextView"
-        android:layout_width="0dp"
+        android:id="@+id/cityLabelTextView"
+        style="@style/ProfileLabel"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:text="Город:"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/authorTextView"
-        app:autoSizeTextType="uniform"
-        app:emojiCompatEnabled="true" />
+        app:layout_constraintTop_toBottomOf="@id/conditionLabelTextView" />
 
     <TextView
-        android:id="@+id/cityTextView"
+        android:id="@+id/cityDetailTextView"
+        style="@style/ProfileValue"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+        app:layout_constraintBaseline_toBaselineOf="@id/cityLabelTextView"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/conditionTextView"
-        app:autoSizeTextType="uniform"
-        app:emojiCompatEnabled="true" />
+        app:layout_constraintStart_toEndOf="@id/guidelineDetail"
+        tools:text="Алматы" />
 
-    <Button
+    <TextView
+        android:id="@+id/ownerCountLabelTextView"
+        style="@style/ProfileLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Владельцев:"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/cityLabelTextView" />
+
+    <TextView
+        android:id="@+id/ownerCountDetailTextView"
+        style="@style/ProfileValue"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:drawablePadding="4dp"
+        app:drawableStartCompat="@drawable/ic_owners"
+        app:layout_constraintBaseline_toBaselineOf="@id/ownerCountLabelTextView"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/guidelineDetail"
+        tools:text="1" />
+
+    <TextView
+        android:id="@+id/phoneLabelTextView"
+        style="@style/ProfileLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Телефон:"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/ownerCountLabelTextView" />
+
+    <TextView
+        android:id="@+id/phoneDetailTextView"
+        style="@style/ProfileValue"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintBaseline_toBaselineOf="@id/phoneLabelTextView"
+        app:layout_constraintEnd_toStartOf="@+id/callButton"
+        app:layout_constraintStart_toEndOf="@id/guidelineDetail"
+        tools:text="+7 777 123 4567" />
+
+    <ImageButton
         android:id="@+id/callButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@android:drawable/ic_menu_call"
+        android:contentDescription="Позвонить"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:padding="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/phoneDetailTextView"
+        app:layout_constraintBottom_toBottomOf="@+id/phoneDetailTextView"
+        app:tint="?attr/colorPrimary" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/exchangeButton"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="@string/call_button"
+        android:layout_marginTop="24dp"
+        android:text="Предложить обмен"
+        app:icon="@android:drawable/ic_menu_send"
+        android:visibility="gone"
+        tools:visibility="visible"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/cityTextView" />
+        app:layout_constraintTop_toBottomOf="@+id/phoneLabelTextView" />
+
+    <ProgressBar
+        android:id="@+id/progressBarDetail"
+        style="?android:attr/progressBarStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:visibility="visible"/>
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guidelineDetail"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.35" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

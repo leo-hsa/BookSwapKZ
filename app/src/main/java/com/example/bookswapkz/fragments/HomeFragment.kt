@@ -17,6 +17,8 @@ import com.example.bookswapkz.adapters.BookAdapter // Убедитесь, что
 import com.example.bookswapkz.databinding.FragmentHomeBinding
 import com.example.bookswapkz.models.Book
 import com.example.bookswapkz.viewmodels.BookViewModel // Убедитесь, что пакет ViewModel правильный
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
 
 class HomeFragment : Fragment() {
 
@@ -27,6 +29,7 @@ class HomeFragment : Fragment() {
 
     private val viewModel: BookViewModel by viewModels()
     private lateinit var bookAdapter: BookAdapter
+    private var currentFilters = mutableSetOf<String>()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -41,6 +44,7 @@ class HomeFragment : Fragment() {
 
         setupRecyclerView()
         setupFab()
+        setupFilters()
         observeViewModel()
 
         updateUiState(isLoading = true)
@@ -52,9 +56,8 @@ class HomeFragment : Fragment() {
         bookAdapter = BookAdapter { book ->
             handleBookClick(book)
         }
-        // Используем безопасный вызов ?.apply для доступа к элементам binding
-        binding.recyclerView?.apply {
-            layoutManager = LinearLayoutManager(requireContext())
+        binding.recentBooksRecyclerView?.apply {
+            layoutManager = androidx.recyclerview.widget.GridLayoutManager(requireContext(), 2)
             adapter = bookAdapter
         }
     }
@@ -69,9 +72,58 @@ class HomeFragment : Fragment() {
     // Настройка FloatingActionButton
     private fun setupFab() {
         // Используем ?. для setOnClickListener
-        binding.fab?.setOnClickListener {
+        binding.addBookFab?.setOnClickListener {
             val action = HomeFragmentDirections.actionHomeToAddBook()
             findNavController().navigate(action)
+        }
+    }
+
+    private fun setupFilters() {
+        // Setup filter button click listener
+        binding.filterButton?.setOnClickListener {
+            // Show filter dialog or bottom sheet
+            showFilterDialog()
+        }
+
+        // Setup chip group listener
+        binding.filterChipGroup?.setOnCheckedChangeListener { group, checkedId ->
+            val chip = group.findViewById<Chip>(checkedId)
+            if (chip != null) {
+                val filterText = chip.text.toString()
+                if (chip.isChecked) {
+                    currentFilters.add(filterText)
+                } else {
+                    currentFilters.remove(filterText)
+                }
+                applyFilters()
+            }
+        }
+    }
+
+    private fun showFilterDialog() {
+        // TODO: Implement filter dialog or bottom sheet
+        // This could show additional filter options like price range, distance, etc.
+    }
+
+    private fun applyFilters() {
+        viewModel.allBooks.value?.let { books ->
+            val filteredBooks = if (currentFilters.isEmpty()) {
+                books
+            } else {
+                books.filter { book ->
+                    currentFilters.any { filter ->
+                        when (filter) {
+                            "Available Now" -> !book.isRented
+                            "Fiction" -> book.condition.equals("Fiction", ignoreCase = true)
+                            "Non-Fiction" -> book.condition.equals("Non-Fiction", ignoreCase = true)
+                            "Science" -> book.condition.equals("Science", ignoreCase = true)
+                            "History" -> book.condition.equals("History", ignoreCase = true)
+                            else -> false
+                        }
+                    }
+                }
+            }
+            bookAdapter.submitList(filteredBooks)
         }
     }
 
@@ -79,33 +131,22 @@ class HomeFragment : Fragment() {
     private fun observeViewModel() {
         viewModel.allBooks.observe(viewLifecycleOwner) { books ->
             updateUiState(isLoading = false, books = books)
+            applyFilters() // Apply filters when new data arrives
         }
         // viewModel.errorState.observe ...
     }
 
     // Обновление UI в зависимости от состояния
     private fun updateUiState(isLoading: Boolean, books: List<Book>? = null, error: String? = null) {
-        // Используем ?. при доступе ко всем View из binding
-        binding.progressBar?.isVisible = isLoading
-        if (!isLoading) {
-            if (error != null) {
-                binding.emptyListTextView?.isVisible = true
-                binding.emptyListTextView?.text = error
-                binding.recyclerView?.isVisible = false
-            } else if (books.isNullOrEmpty()) {
-                binding.emptyListTextView?.isVisible = true
-                binding.emptyListTextView?.text = getString(R.string.no_books_found)
-                binding.recyclerView?.isVisible = false
-            } else {
-                binding.emptyListTextView?.isVisible = false
-                binding.recyclerView?.isVisible = true
-                // submitList можно вызвать безопасно, так как bookAdapter - lateinit var
-                // и если код дошел сюда без падения, адаптер уже инициализирован
-                bookAdapter.submitList(books)
-            }
-        } else {
-            binding.recyclerView?.isVisible = false
-            binding.emptyListTextView?.isVisible = false
+        binding.recentBooksRecyclerView?.isVisible = when {
+            isLoading -> false
+            error != null -> false
+            books.isNullOrEmpty() -> false
+            else -> true
+        }
+
+        if (!isLoading && error == null && !books.isNullOrEmpty()) {
+            bookAdapter.submitList(books)
         }
     }
 
@@ -113,7 +154,7 @@ class HomeFragment : Fragment() {
     // Анимация появления FAB
     private fun animateFabIn() {
         // Используем ?.apply
-        binding.fab?.apply {
+        binding.addBookFab?.apply {
             translationY = 300f
             alpha = 0f
             val tyAnimation = SpringAnimation(this, SpringAnimation.TRANSLATION_Y, 0f).apply {
@@ -133,7 +174,7 @@ class HomeFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         // Используем ?. при доступе к адаптеру RecyclerView перед обнулением binding
-        binding.recyclerView?.adapter = null // Обнуляем адаптер RecyclerView
+        binding.recentBooksRecyclerView?.adapter = null // Обнуляем адаптер RecyclerView
         _binding = null // ОЧЕНЬ ВАЖНО обнулить _binding для предотвращения утечек памяти
     }
 }

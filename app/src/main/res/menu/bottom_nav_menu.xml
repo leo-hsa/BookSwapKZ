@@ -2,14 +2,14 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/homeFragment"
-        android:title="Главная"
-        android:icon="@android:drawable/ic_menu_search"/>
+        android:title="Home"
+        android:icon="@drawable/ic_home" />
     <item
         android:id="@+id/myBooksFragment"
-        android:title="Мои книги"
-        android:icon="@android:drawable/ic_menu_myplaces"/>
+        android:title="My Books"
+        android:icon="@drawable/ic_book" />
     <item
         android:id="@+id/profileFragment"
-        android:title="Профиль"
-        android:icon="@android:drawable/ic_menu_manage"/>
+        android:title="Profile"
+        android:icon="@drawable/ic_profile" />
 </menu>

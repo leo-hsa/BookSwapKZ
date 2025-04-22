@@ -1,7 +1,6 @@
-<!-- values/styles.xml (После удаления дубликата темы) -->
+<!-- res/values/styles.xml -->
 <resources xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Стиль для меток в профиле -->
     <style name="ProfileLabel">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
@@ -9,14 +8,11 @@
         <item name="android:textColor">?android:attr/textColorSecondary</item>
     </style>
 
-    <!-- Стиль для значений в профиле -->
     <style name="ProfileValue">
         <item name="android:layout_width">0dp</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginStart">8dp</item>
         <item name="android:textColor">?android:attr/textColorPrimary</item>
     </style>
-
-    <!-- Другие ваши стили, если они есть ... -->
 
 </resources>

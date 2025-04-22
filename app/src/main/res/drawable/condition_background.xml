@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <!-- Цвет фона -->
+    <solid android:color="#FF9800"/> <!-- Пример: оранжевый -->
+
+    <!-- Закругление углов -->
+    <corners android:radius="4dp"/>
+
+    <!-- Отступы -->
+    <padding
+        android:left="6dp"
+        android:top="2dp"
+        android:right="6dp"
+        android:bottom="2dp"/>
+
+</shape>

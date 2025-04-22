@@ -1,4 +1,4 @@
-package com.example.bookswapkz // Убедитесь, что пакет правильный
+package com.example.bookswapkz
 
 import android.net.Uri
 import android.util.Log
@@ -7,113 +7,111 @@ import androidx.lifecycle.MutableLiveData
 import com.example.bookswapkz.models.Book
 import com.example.bookswapkz.models.User
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthUserCollisionException // Импорт для проверки ошибки
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query // Импорт для запросов
+import com.google.firebase.firestore.FirebaseFirestoreException
+import com.google.firebase.firestore.Query
 import com.google.firebase.storage.FirebaseStorage
-import kotlinx.coroutines.tasks.await // Для использования await с Firebase задачами (опционально)
+import java.util.Date
 
 class FirebaseRepository {
 
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
-    private val storage: FirebaseStorage = FirebaseStorage.getInstance()
-    private val usersCollection = firestore.collection("users")
-    private val booksCollection = firestore.collection("books")
-    private val storageRef = storage.reference.child("book_images") // Папка для изображений книг
+    private val storage: FirebaseStorage = FirebaseStorage.getInstance() // Сначала Storage
+    private val storageRef = storage.reference.child("book_images") // Затем используем storage
+    private val usersCollection = firestore.collection("users") // Затем используем firestore
+    private val booksCollection = firestore.collection("books") // Затем используем firestore
 
     private val TAG = "FirebaseRepository"
 
-    // Поле для хранения последней ошибки
     var lastError: String? = null
-        private set // Сеттер доступен только внутри этого класса
+        private set
 
-    /**
-     * Получает данные текущего авторизованного пользователя из Firestore.
-     * Возвращает LiveData<User?>.
-     */
     fun getUser(): LiveData<User?> {
         val userData = MutableLiveData<User?>()
         val firebaseUser: FirebaseUser? = auth.currentUser
-        lastError = null // Сброс ошибки
+        lastError = null
 
         if (firebaseUser == null) {
-            Log.d(TAG, "No current user found.")
-            userData.postValue(null) // Отправляем null, если пользователя нет
+            Log.d(TAG, "getUser: No current user found.")
+            userData.postValue(null)
         } else {
-            Log.d(TAG, "Fetching user data for UID: ${firebaseUser.uid}")
+            Log.d(TAG, "getUser: Fetching user data for UID: ${firebaseUser.uid}")
             usersCollection.document(firebaseUser.uid).get()
                 .addOnSuccessListener { documentSnapshot ->
                     if (documentSnapshot.exists()) {
-                        val user = documentSnapshot.toObject(User::class.java)?.copy(userId = documentSnapshot.id) // Копируем ID документа в поле userId
-                        userData.postValue(user)
-                        Log.d(TAG, "User data fetched successfully: ${user?.nickname}")
+                        try {
+                            val user = documentSnapshot.toObject(User::class.java)?.copy(userId = documentSnapshot.id)
+                            userData.postValue(user)
+                            Log.d(TAG, "getUser: User data fetched successfully: ${user?.nickname}")
+                        } catch (e: Exception) {
+                            Log.e(TAG, "getUser: Error converting document to User object for UID ${firebaseUser.uid}", e)
+                            lastError = "Ошибка чтения данных профиля: ${e.localizedMessage}"
+                            userData.postValue(null)
+                        }
                     } else {
-                        Log.w(TAG, "User document does not exist for UID: ${firebaseUser.uid}")
-                        userData.postValue(null) // Документ не найден
+                        Log.w(TAG, "getUser: User document does not exist for UID: ${firebaseUser.uid}")
+                        userData.postValue(null)
                     }
                 }
                 .addOnFailureListener { e ->
-                    Log.e(TAG, "Error getting user document", e)
+                    Log.e(TAG, "getUser: Error getting user document for UID ${firebaseUser.uid}", e)
                     lastError = "Ошибка загрузки профиля: ${e.localizedMessage}"
-                    userData.postValue(null) // Ошибка при загрузке
+                    userData.postValue(null)
                 }
         }
         return userData
     }
 
-    /**
-     * Получает список всех книг из Firestore.
-     * Возвращает LiveData<List<Book>>.
-     */
     fun getAllBooks(): LiveData<List<Book>> {
         val booksData = MutableLiveData<List<Book>>()
-        lastError = null // Сброс ошибки
-        Log.d(TAG, "Fetching all books...")
+        lastError = null
+        Log.d(TAG, "getAllBooks: Setting up listener for all books...")
 
         booksCollection
-            // .orderBy("timestamp", Query.Direction.DESCENDING) // Пример сортировки по времени добавления
-            .addSnapshotListener { snapshots, e -> // Используем слушатель для обновлений в реальном времени
+            .addSnapshotListener { snapshots, e ->
                 if (e != null) {
-                    Log.w(TAG, "Error listening for all books updates.", e)
+                    Log.w(TAG, "getAllBooks: Error listening for all books updates.", e)
                     lastError = "Ошибка загрузки книг: ${e.localizedMessage}"
-                    booksData.postValue(emptyList()) // Возвращаем пустой список при ошибке
+                    booksData.postValue(emptyList())
                     return@addSnapshotListener
                 }
 
                 val booksList = mutableListOf<Book>()
                 if (snapshots != null) {
                     for (doc in snapshots) {
-                        val book = doc.toObject(Book::class.java).copy(id = doc.id) // Копируем ID документа в поле id
-                        booksList.add(book)
+                        try {
+                            val book = doc.toObject(Book::class.java).copy(id = doc.id)
+                            booksList.add(book)
+                        } catch (ex: Exception) {
+                            Log.e(TAG, "getAllBooks: Error converting document ${doc.id} to Book", ex)
+                        }
                     }
                 }
-                Log.d(TAG, "All books listener updated, ${booksList.size} books found.")
+                Log.d(TAG, "getAllBooks: Listener updated, ${booksList.size} books found.")
                 booksData.postValue(booksList)
             }
         return booksData
     }
 
-    /**
-     * Получает список книг для конкретного пользователя из Firestore.
-     * Возвращает LiveData<List<Book>>.
-     */
     fun getUserBooks(userId: String): LiveData<List<Book>> {
         val booksData = MutableLiveData<List<Book>>()
-        lastError = null // Сброс ошибки
+        lastError = null
 
         if (userId.isBlank()) {
-            Log.w(TAG, "getUserBooks called with blank userId.")
+            Log.w(TAG, "getUserBooks: Called with blank userId.")
             booksData.postValue(emptyList())
             return booksData
         }
 
-        Log.d(TAG, "Fetching books for user ID: $userId")
+        Log.d(TAG, "getUserBooks: Setting up listener for books of user ID: $userId")
         booksCollection.whereEqualTo("userId", userId)
-            // .orderBy("timestamp", Query.Direction.DESCENDING) // Пример сортировки
             .addSnapshotListener { snapshots, e ->
                 if (e != null) {
-                    Log.w(TAG, "Error listening for user books updates.", e)
+                    Log.w(TAG, "getUserBooks: Error listening for user books updates (User: $userId).", e)
                     lastError = "Ошибка загрузки ваших книг: ${e.localizedMessage}"
                     booksData.postValue(emptyList())
                     return@addSnapshotListener
@@ -122,116 +120,79 @@ class FirebaseRepository {
                 val booksList = mutableListOf<Book>()
                 if (snapshots != null) {
                     for (doc in snapshots) {
-                        val book = doc.toObject(Book::class.java).copy(id = doc.id)
-                        booksList.add(book)
+                        try {
+                            val book = doc.toObject(Book::class.java).copy(id = doc.id)
+                            booksList.add(book)
+                        } catch (ex: Exception) {
+                            Log.e(TAG, "getUserBooks: Error converting document ${doc.id} to Book for user $userId", ex)
+                        }
                     }
                 }
-                Log.d(TAG, "User books listener updated, ${booksList.size} books found for user $userId.")
+                Log.d(TAG, "getUserBooks: Listener updated, ${booksList.size} books found for user $userId.")
                 booksData.postValue(booksList)
             }
         return booksData
     }
 
 
-    /**
-     * Добавляет книгу в Firestore и загружает изображение в Storage (если есть).
-     * Возвращает LiveData<Boolean> с результатом операции.
-     */
-    fun addBook(book: Book, imageUri: Uri?): LiveData<Boolean> {
+    fun addBook(book: Book, imageUri: Uri?): LiveData<Boolean> { // imageUri больше не используется, но оставим для совместимости с ViewModel
         val result = MutableLiveData<Boolean>()
-        lastError = null // Сброс ошибки
+        lastError = null
         val currentUser = auth.currentUser
 
         if (currentUser == null) {
+            Log.e(TAG, "addBook failed: User not authenticated")
             lastError = "Пользователь не авторизован"
             result.postValue(false)
             return result
         }
 
-        // Добавляем userId к объекту книги перед сохранением
-        val bookWithUserId = book.copy(userId = currentUser.uid)
-
-        // 1. Генерируем ID для новой книги
+        // Убеждаемся, что imageUrl нет в сохраняемом объекте
+        val bookWithUserId = book.copy(userId = currentUser.uid /*, imageUrl = null */) // Убеждаемся, что imageUrl сброшен, если он был в модели
         val newBookRef = booksCollection.document()
         val bookId = newBookRef.id
-        val bookToSave = bookWithUserId.copy(id = bookId) // Сохраняем с ID
+        val bookToSave = bookWithUserId.copy(id = bookId, ownerCount = 1)
+        Log.d(TAG, "addBook: Generated book ID: $bookId for user ${currentUser.uid}")
 
-        // 2. Загружаем изображение, если оно есть
-        if (imageUri != null) {
-            val imageRef = storageRef.child("${bookId}_${System.currentTimeMillis()}.jpg")
-            Log.d(TAG, "Uploading image to: ${imageRef.path}")
-            imageRef.putFile(imageUri)
-                .addOnSuccessListener { taskSnapshot ->
-                    Log.d(TAG, "Image upload successful.")
-                    // 3. Получаем URL загруженного изображения
-                    imageRef.downloadUrl.addOnSuccessListener { downloadUrl ->
-                        Log.d(TAG, "Image URL obtained: $downloadUrl")
-                        // 4. Сохраняем книгу с URL изображения
-                        val bookWithImage = bookToSave.copy(imageUrl = downloadUrl.toString())
-                        saveBookData(newBookRef, bookWithImage, result)
-                    }.addOnFailureListener { e ->
-                        Log.e(TAG, "Failed to get download URL", e)
-                        lastError = "Ошибка получения URL изображения: ${e.localizedMessage}"
-                        // Попытка сохранить книгу без изображения или вернуть ошибку?
-                        // Пока сохраняем без картинки
-                        saveBookData(newBookRef, bookToSave, result)
-                        // result.postValue(false) // Если картинка обязательна
-                    }
-                }
-                .addOnFailureListener { e ->
-                    Log.e(TAG, "Image upload failed", e)
-                    lastError = "Ошибка загрузки изображения: ${e.localizedMessage}"
-                    // Попытка сохранить книгу без изображения или вернуть ошибку?
-                    // Пока сохраняем без картинки
-                    saveBookData(newBookRef, bookToSave, result)
-                    // result.postValue(false) // Если картинка обязательна
-                }
-        } else {
-            // 3. Изображения нет, сразу сохраняем данные книги
-            Log.d(TAG, "No image provided, saving book data directly.")
-            saveBookData(newBookRef, bookToSave, result)
-        }
+        // Сразу сохраняем книгу без изображения
+        Log.d(TAG, "addBook: Saving book data directly (no image)...")
+        saveBookData(newBookRef, bookToSave, result)
 
         return result
     }
 
-    // Вспомогательная функция для сохранения данных книги в Firestore
     private fun saveBookData(docRef: com.google.firebase.firestore.DocumentReference, book: Book, resultLiveData: MutableLiveData<Boolean>) {
+        Log.d(TAG, "saveBookData: Attempting to save book ID ${book.id} to Firestore path ${docRef.path}")
         docRef.set(book)
             .addOnSuccessListener {
-                Log.i(TAG, "Book data saved successfully for book ID: ${book.id}")
+                Log.i(TAG, "saveBookData: Book data saved successfully for book ID: ${book.id}")
+                lastError = null
                 resultLiveData.postValue(true)
             }
             .addOnFailureListener { e ->
-                Log.e(TAG, "Error saving book data", e)
+                Log.e(TAG, "saveBookData: Error saving book data for book ID ${book.id}", e)
                 lastError = "Ошибка сохранения данных книги: ${e.localizedMessage}"
                 resultLiveData.postValue(false)
             }
     }
 
-    /**
-     * Регистрирует пользователя в Firebase Auth и сохраняет его данные в Firestore.
-     * Возвращает LiveData<Boolean> с результатом операции.
-     */
     fun registerUser(
         nickname: String, name: String, city: String, street: String, houseNumber: String,
         age: Int, phone: String, email: String, password: String
     ): LiveData<Boolean> {
         val result = MutableLiveData<Boolean>()
-        lastError = null // Сброс ошибки
+        lastError = null
 
-        Log.d(TAG, "Attempting registration for email: $email")
+        Log.d(TAG, "registerUser: Attempting registration for email: $email")
         auth.createUserWithEmailAndPassword(email, password)
             .addOnSuccessListener { authResult ->
                 val firebaseUser = authResult.user
                 if (firebaseUser != null) {
-                    Log.d(TAG, "User created in Auth successfully: ${firebaseUser.uid}")
-                    // Пользователь создан в Auth, теперь сохраняем доп. инфо в Firestore
+                    Log.d(TAG, "registerUser: User created in Auth successfully: ${firebaseUser.uid}")
                     val userMap = hashMapOf(
-                        // Не сохраняем userId в документе, используем ID документа как userId
                         "nickname" to nickname,
                         "name" to name,
-                        "email" to email.lowercase(), // Сохраняем email в нижнем регистре
+                        "email" to email.lowercase(),
                         "age" to age,
                         "city" to city,
                         "street" to street,
@@ -240,53 +201,211 @@ class FirebaseRepository {
                     )
                     usersCollection.document(firebaseUser.uid).set(userMap)
                         .addOnSuccessListener {
-                            Log.d(TAG, "User data saved to Firestore for UID: ${firebaseUser.uid}")
-                            result.postValue(true) // Вся регистрация успешна
-                        }
-                        .addOnFailureListener { e ->
-                            Log.e(TAG, "Error saving user data to Firestore", e)
-                            // Пользователь создан в Auth, но данные не сохранились.
-                            // Это плохая ситуация. Можно попытаться удалить пользователя из Auth или сообщить об особой ошибке.
+                            Log.d(TAG, "registerUser: User data saved to Firestore for UID: ${firebaseUser.uid}")
+                            result.postValue(true)
+                        }.addOnFailureListener { e ->
+                            Log.e(TAG, "registerUser: Error saving user data to Firestore for UID ${firebaseUser.uid}", e)
                             lastError = "Ошибка сохранения профиля: ${e.localizedMessage}"
                             result.postValue(false)
                         }
                 } else {
-                    Log.e(TAG, "FirebaseUser is null after successful Auth creation!")
+                    Log.e(TAG, "registerUser: FirebaseUser is null after successful Auth creation!")
                     lastError = "Не удалось получить данные пользователя после создания."
                     result.postValue(false)
                 }
             }
             .addOnFailureListener { e ->
-                Log.e(TAG, "Error creating user in Auth", e)
-                lastError = "Ошибка регистрации: ${e.localizedMessage}" // Часто "email already in use"
+                Log.e(TAG, "registerUser: Error creating user in Auth", e)
+                if (e is FirebaseAuthUserCollisionException) {
+                    lastError = "Этот Email уже зарегистрирован."
+                } else {
+                    lastError = "Ошибка регистрации: ${e.localizedMessage}"
+                }
                 result.postValue(false)
             }
         return result
     }
 
-    /**
-     * Выполняет вход пользователя через Firebase Auth.
-     * Возвращает LiveData<Boolean> с результатом операции.
-     */
     fun loginUser(email: String, password: String): LiveData<Boolean> {
         val result = MutableLiveData<Boolean>()
-        lastError = null // Сброс ошибки
-        Log.d(TAG, "Attempting login for email: $email")
+        lastError = null
+        Log.d(TAG, "loginUser: Attempting login for email: $email")
 
         auth.signInWithEmailAndPassword(email, password)
             .addOnSuccessListener {
-                Log.i(TAG, "signInWithEmail:success for user ${it.user?.uid}")
-                result.postValue(true) // Вход успешен
+                Log.i(TAG, "loginUser: signInWithEmail:success for user ${it.user?.uid}")
+                result.postValue(true)
             }
             .addOnFailureListener { e ->
-                Log.w(TAG, "signInWithEmail:failure", e)
-                lastError = "Ошибка входа: ${e.localizedMessage}" // Часто "invalid credentials"
-                result.postValue(false) // Вход не удался
+                Log.w(TAG, "loginUser: signInWithEmail:failure", e)
+                lastError = "Ошибка входа: Неверный email или пароль. (${e.javaClass.simpleName})"
+                result.postValue(false)
             }
         return result
     }
 
-    // TODO: Добавить методы для удаления книги, обновления данных пользователя и т.д.
-    // TODO: Добавить метод для отписки от слушателей Firestore (removeListeners) для вызова в onCleared ViewModel
 
+    fun recordExchange(bookId: String, newOwnerUserId: String, newOwnerPhone: String): LiveData<Boolean> {
+        val result = MutableLiveData<Boolean>()
+        lastError = null
+        Log.d(TAG, "recordExchange: Attempting for book $bookId to user $newOwnerUserId")
+
+        if (bookId.isBlank() || newOwnerUserId.isBlank()) {
+            Log.e(TAG, "recordExchange: Invalid input (blank bookId or userId)")
+            lastError = "Внутренняя ошибка (пустой ID)"
+            result.postValue(false)
+            return result
+        }
+
+        val bookRef = booksCollection.document(bookId)
+
+        firestore.runTransaction { transaction ->
+            val snapshot = transaction.get(bookRef)
+
+            if (!snapshot.exists()) {
+                Log.e(TAG, "recordExchange: Book document $bookId not found during transaction.")
+                throw FirebaseFirestoreException("Книга не найдена!", FirebaseFirestoreException.Code.NOT_FOUND)
+            }
+
+            val currentOwnerCount = snapshot.getLong("ownerCount") ?: 0
+            val newOwnerCountValue = currentOwnerCount + 1
+
+            val updates = mapOf(
+                "userId" to newOwnerUserId,
+                "phone" to newOwnerPhone,
+                "ownerCount" to newOwnerCountValue
+            )
+            Log.d(TAG,"recordExchange: Updating book $bookId with: $updates")
+            transaction.update(bookRef, updates)
+            null
+        }.addOnSuccessListener {
+            Log.i(TAG, "recordExchange: Transaction success for book $bookId")
+            result.postValue(true)
+        }.addOnFailureListener { e ->
+            Log.e(TAG, "recordExchange: Transaction failure for book $bookId", e)
+            if (e is FirebaseFirestoreException && e.code == FirebaseFirestoreException.Code.NOT_FOUND) {
+                lastError = "Книга не найдена (ошибка транзакции)."
+            } else {
+                lastError = "Ошибка записи обмена: ${e.localizedMessage}"
+            }
+            result.postValue(false)
+        }
+
+        return result
+    }
+
+    fun getRentableBooks(paidOnly: Boolean? = null): LiveData<List<Book>> {
+        val booksData = MutableLiveData<List<Book>>()
+        lastError = null
+        Log.d(TAG, "getRentableBooks: Setting up listener for rentable books...")
+
+        var query = booksCollection.whereEqualTo("isForRent", true)
+            .whereEqualTo("isRented", false)
+
+        if (paidOnly != null) {
+            if (paidOnly) {
+                query = query.whereGreaterThan("rentPrice", 0.0)
+            } else {
+                query = query.whereEqualTo("rentPrice", null)
+            }
+        }
+
+        query.addSnapshotListener { snapshots, e ->
+            if (e != null) {
+                Log.w(TAG, "getRentableBooks: Error listening for rentable books updates.", e)
+                lastError = "Ошибка загрузки книг для аренды: ${e.localizedMessage}"
+                booksData.postValue(emptyList())
+                return@addSnapshotListener
+            }
+
+            val booksList = mutableListOf<Book>()
+            if (snapshots != null) {
+                for (doc in snapshots) {
+                    try {
+                        val book = doc.toObject(Book::class.java).copy(id = doc.id)
+                        booksList.add(book)
+                    } catch (ex: Exception) {
+                        Log.e(TAG, "getRentableBooks: Error converting document ${doc.id} to Book", ex)
+                    }
+                }
+            }
+            Log.d(TAG, "getRentableBooks: Listener updated, ${booksList.size} rentable books found.")
+            booksData.postValue(booksList)
+        }
+        return booksData
+    }
+
+    fun rentBook(bookId: String, rentPeriod: String): LiveData<Boolean> {
+        val result = MutableLiveData<Boolean>()
+        lastError = null
+
+        val currentUser = auth.currentUser
+        if (currentUser == null) {
+            lastError = "Пользователь не авторизован"
+            result.postValue(false)
+            return result
+        }
+
+        val bookRef = booksCollection.document(bookId)
+        val updates = hashMapOf<String, Any>(
+            "isRented" to true,
+            "rentedToUserId" to currentUser.uid,
+            "rentStartDate" to Date().toString(),
+            "rentEndDate" to calculateEndDate(rentPeriod)
+        )
+
+        bookRef.update(updates)
+            .addOnSuccessListener {
+                Log.d(TAG, "rentBook: Book $bookId rented successfully")
+                result.postValue(true)
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "rentBook: Error renting book $bookId", e)
+                lastError = "Ошибка при аренде книги: ${e.localizedMessage}"
+                result.postValue(false)
+            }
+
+        return result
+    }
+
+    fun returnBook(bookId: String): LiveData<Boolean> {
+        val result = MutableLiveData<Boolean>()
+        lastError = null
+
+        val bookRef = booksCollection.document(bookId)
+        val updates = hashMapOf<String, Any>(
+            "isRented" to false,
+            "rentedToUserId" to FieldValue.delete(),
+            "rentStartDate" to FieldValue.delete(),
+            "rentEndDate" to FieldValue.delete()
+        )
+
+        bookRef.update(updates)
+            .addOnSuccessListener {
+                Log.d(TAG, "returnBook: Book $bookId returned successfully")
+                result.postValue(true)
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "returnBook: Error returning book $bookId", e)
+                lastError = "Ошибка при возврате книги: ${e.localizedMessage}"
+                result.postValue(false)
+            }
+
+        return result
+    }
+
+    private fun calculateEndDate(rentPeriod: String): String {
+        val currentDate = Date()
+        val calendar = java.util.Calendar.getInstance()
+        calendar.time = currentDate
+
+        when (rentPeriod) {
+            "1 неделя" -> calendar.add(java.util.Calendar.WEEK_OF_YEAR, 1)
+            "2 недели" -> calendar.add(java.util.Calendar.WEEK_OF_YEAR, 2)
+            "1 месяц" -> calendar.add(java.util.Calendar.MONTH, 1)
+            else -> calendar.add(java.util.Calendar.WEEK_OF_YEAR, 1) // Default to 1 week
+        }
+
+        return calendar.time.toString()
+    }
 }

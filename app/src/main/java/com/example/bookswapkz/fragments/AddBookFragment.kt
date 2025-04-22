@@ -1,17 +1,16 @@
 package com.example.bookswapkz.fragments
 
-import android.app.Activity
-import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Observer
 import androidx.navigation.fragment.findNavController
 import com.example.bookswapkz.R
 import com.example.bookswapkz.databinding.FragmentAddBookBinding
@@ -21,18 +20,7 @@ import com.example.bookswapkz.viewmodels.BookViewModel
 class AddBookFragment : Fragment() {
     private var _binding: FragmentAddBookBinding? = null
     private val binding get() = _binding!!
-    private val viewModel: BookViewModel by viewModels()
-    private var imageUri: Uri? = null
-
-    private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            result.data?.data?.let { uri ->
-                imageUri = uri
-                binding.bookImage.setImageURI(uri)
-                binding.bookImage.visibility = View.VISIBLE
-            }
-        }
-    }
+    private val viewModel: BookViewModel by viewModels({ requireActivity() })
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -45,53 +33,117 @@ class AddBookFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val conditions = arrayOf("Новое", "Хорошее", "Среднее")
-        val cities = arrayOf("Алматы", "Астана", "Шымкент")
-        binding.conditionSpinner.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, conditions)
-        binding.citySpinner.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, cities)
+        setupSpinners()
+        setupRentalOptions()
 
-        binding.selectImageButton.setOnClickListener {
-            val intent = Intent(Intent.ACTION_PICK)
-            intent.type = "image/*"
-            pickImageLauncher.launch(intent)
-        }
-
+        binding.addBookButton.isEnabled = false
         binding.addBookButton.setOnClickListener {
-            val title = binding.titleEditText.text.toString().trim()
-            val author = binding.authorEditText.text.toString().trim()
-            val condition = binding.conditionSpinner.selectedItem.toString()
-            val city = binding.citySpinner.selectedItem.toString()
+            addBook()
+        }
 
-            if (title.isEmpty() || author.isEmpty()) {
-                Toast.makeText(context, "Заполните название и автора", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
+        viewModel.user.observe(viewLifecycleOwner, Observer { user ->
+            val isReadyToAdd = user != null && !user.phone.isNullOrBlank()
+            binding.addBookButton.isEnabled = isReadyToAdd
+            Log.d("AddBookFragment", "User observed: ${user?.nickname}, Phone: ${user?.phone}, Button enabled: $isReadyToAdd")
+            if (user != null && user.phone.isNullOrBlank() && !_binding!!.addBookButton.isEnabled) {
+                Toast.makeText(context, "Добавьте номер телефона в профиле", Toast.LENGTH_SHORT).show()
             }
+        })
 
-            val book = Book(
-                id = "",
-                title = title,
-                author = author,
-                condition = condition,
-                city = city,
-                userId = "",
-                imageUrl = null,
-                phone = viewModel.user.value?.phone
-            )
-
-            binding.progressBar.visibility = View.VISIBLE
-            binding.addBookButton.isEnabled = false
-
-            viewModel.addBook(book, imageUri).observe(viewLifecycleOwner) { success ->
-                binding.progressBar.visibility = View.GONE
-                binding.addBookButton.isEnabled = true
-                if (success) {
-                    Toast.makeText(context, "Книга добавлена", Toast.LENGTH_SHORT).show()
-                    findNavController().navigate(R.id.action_addBook_to_home)
-                } else {
-                    Toast.makeText(context, "Ошибка добавления", Toast.LENGTH_SHORT).show()
-                }
+        viewModel.errorMessage.observe(viewLifecycleOwner) { error ->
+            if (error != null) {
+                binding.progressBar.isVisible = false
+                binding.addBookButton.isEnabled = viewModel.user.value != null && !viewModel.user.value?.phone.isNullOrBlank()
+                Toast.makeText(requireContext(), "Ошибка: $error", Toast.LENGTH_LONG).show()
+                viewModel.clearErrorMessage()
             }
         }
+    }
+
+    private fun setupSpinners() {
+        val conditions = resources.getStringArray(R.array.book_conditions)
+        val conditionAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, conditions)
+        conditionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.conditionSpinner.adapter = conditionAdapter
+        binding.conditionSpinner.onFocusChangeListener = View.OnFocusChangeListener { v, hasFocus -> if(hasFocus) hideKeyboard(v) }
+
+        val cities = resources.getStringArray(R.array.cities)
+        val cityAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, cities)
+        cityAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.citySpinner.adapter = cityAdapter
+        binding.citySpinner.onFocusChangeListener = View.OnFocusChangeListener { v, hasFocus -> if(hasFocus) hideKeyboard(v) }
+
+        val rentPeriods = resources.getStringArray(R.array.rent_periods)
+        val rentPeriodAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, rentPeriods)
+        rentPeriodAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.rentPeriodSpinner.adapter = rentPeriodAdapter
+    }
+
+    private fun setupRentalOptions() {
+        binding.rentSwitch.setOnCheckedChangeListener { _, isChecked ->
+            binding.rentOptionsLayout.visibility = if (isChecked) View.VISIBLE else View.GONE
+        }
+    }
+
+    private fun addBook() {
+        val title = binding.titleEditText.text.toString().trim()
+        val author = binding.authorEditText.text.toString().trim()
+        val condition = binding.conditionSpinner.selectedItem?.toString() ?: ""
+        val city = binding.citySpinner.selectedItem?.toString() ?: ""
+
+        if (title.isEmpty() || author.isEmpty() || condition.isEmpty() || city.isEmpty()) {
+            Toast.makeText(requireContext(), "Пожалуйста, заполните все поля", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val currentUser = viewModel.user.value
+        val currentUserPhone = currentUser?.phone
+
+        if (currentUser == null || currentUserPhone.isNullOrBlank()) {
+            Toast.makeText(requireContext(), "Ошибка: Данные пользователя недоступны.", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        val isForRent = binding.rentSwitch.isChecked
+        val rentPrice = if (isForRent) {
+            binding.rentPriceEditText.text.toString().toDoubleOrNull()
+        } else {
+            null
+        }
+        val rentPeriod = if (isForRent) {
+            binding.rentPeriodSpinner.selectedItem?.toString()
+        } else {
+            null
+        }
+
+        val book = Book(
+            title = title,
+            author = author,
+            condition = condition,
+            city = city,
+            userId = currentUser.userId,
+            phone = currentUserPhone,
+            isForRent = isForRent,
+            rentPrice = rentPrice,
+            rentPeriod = rentPeriod
+        )
+
+        binding.progressBar.isVisible = true
+        binding.addBookButton.isEnabled = false
+
+        viewModel.addBook(book, null).observe(viewLifecycleOwner) { success ->
+            if (success) {
+                Toast.makeText(requireContext(), "Книга успешно добавлена", Toast.LENGTH_SHORT).show()
+                findNavController().navigateUp()
+            }
+            binding.progressBar.isVisible = false
+            binding.addBookButton.isEnabled = true
+        }
+    }
+
+    private fun hideKeyboard(view: View) {
+        val imm = requireActivity().getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+        imm.hideSoftInputFromWindow(view.windowToken, 0)
     }
 
     override fun onDestroyView() {
