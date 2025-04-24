@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Filters"
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6"
+        android:layout_marginBottom="16dp" />
+
+    <com.google.android.material.chip.ChipGroup
+        android:id="@+id/rentTypeChipGroup"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:singleSelection="true"
+        android:layout_marginBottom="16dp">
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/allBooksChip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="All Books"
+            app:chipBackgroundColor="@color/chip_selected" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/forRentChip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="For Rent"
+            app:chipBackgroundColor="@color/card_background" />
+
+    </com.google.android.material.chip.ChipGroup>
+
+    <com.google.android.material.chip.ChipGroup
+        android:id="@+id/priceTypeChipGroup"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:singleSelection="true"
+        android:layout_marginBottom="16dp">
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/allPricesChip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="All Prices"
+            app:chipBackgroundColor="@color/chip_selected" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/freeChip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Free"
+            app:chipBackgroundColor="@color/card_background" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/paidChip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Paid"
+            app:chipBackgroundColor="@color/card_background" />
+
+    </com.google.android.material.chip.ChipGroup>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/cityInputLayout"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="City"
+        android:layout_marginBottom="16dp">
+
+        <AutoCompleteTextView
+            android:id="@+id/cityAutoComplete"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="none" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="8dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/clearButton"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Clear Filters" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/applyButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Apply Filters" />
+
+    </LinearLayout>
+
+</LinearLayout> 
