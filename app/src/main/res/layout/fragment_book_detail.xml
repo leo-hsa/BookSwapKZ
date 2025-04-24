@@ -133,6 +133,50 @@
         app:layout_constraintBottom_toBottomOf="@+id/phoneDetailTextView"
         app:tint="?attr/colorPrimary" />
 
+    <TextView
+        android:id="@+id/ownerLabelTextView"
+        style="@style/ProfileLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Владелец:"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/phoneLabelTextView" />
+
+    <TextView
+        android:id="@+id/ownerNicknameTextView"
+        style="@style/ProfileValue"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintBaseline_toBaselineOf="@id/ownerLabelTextView"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/guidelineDetail"
+        tools:text="Username" />
+
+    <TextView
+        android:id="@+id/rentInfoLabelTextView"
+        style="@style/ProfileLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Аренда:"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/ownerLabelTextView"
+        tools:visibility="visible" />
+
+    <TextView
+        android:id="@+id/rentInfoTextView"
+        style="@style/ProfileValue"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintBaseline_toBaselineOf="@id/rentInfoLabelTextView"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/guidelineDetail"
+        tools:text="1000 тг / 1 неделя"
+        tools:visibility="visible" />
+
     <com.google.android.material.button.MaterialButton
         android:id="@+id/exchangeButton"
         android:layout_width="0dp"
@@ -144,7 +188,7 @@
         tools:visibility="visible"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/phoneLabelTextView" />
+        app:layout_constraintTop_toBottomOf="@+id/rentInfoLabelTextView" />
 
     <ProgressBar
         android:id="@+id/progressBarDetail"

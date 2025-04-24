@@ -1,21 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#EDD6C8</color>
-    <color name="primary_dark">#D4B8A8</color>
+    <color name="primary">#FF6200EE</color>
+    <color name="primary_dark">#FF3700B3</color>
+    <color name="secondary">#FF03DAC5</color>
+    <color name="secondary_dark">#FF018786</color>
     <color name="accent">#FF4081</color>
-    <color name="background">#F5F7FA</color>
-    <color name="surface">#FFFFFF</color>
-    <color name="text_primary">#263238</color>
-    <color name="text_secondary">#607D8B</color>
-    <color name="card_background">#FFFFFF</color>
+    <color name="background">#FFFFFFFF</color>
+    <color name="surface">#FFFFFFFF</color>
+    <color name="text_primary">#DE000000</color>
+    <color name="text_secondary">#99000000</color>
+    <color name="card_background">#F5F5F5</color>
     <color name="rating_color">#FFC107</color>
     <color name="button_background">#EDD6C8</color>
-    <color name="white">#FFFFFF</color>
-    <color name="black">#000000</color>
-    <color name="chip_selected">#F5E6DE</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
+    <color name="chip_selected">#E0E0E0</color>
     <color name="divider">#EEEEEE</color>
     <color name="status_available">#4CAF50</color>
     <color name="status_borrowed">#FF9800</color>
+    <color name="status_rental">#FF9800</color>
+    <color name="status_exchange">#4CAF50</color>
     <color name="book_cover_placeholder">#E0E0E0</color>
     <color name="avatar_background">#F5E6DE</color>
     <color name="price_color">#FF5722</color>

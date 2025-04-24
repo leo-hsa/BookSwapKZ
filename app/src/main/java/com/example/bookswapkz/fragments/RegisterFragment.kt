@@ -15,7 +15,10 @@ import androidx.navigation.fragment.findNavController
 import com.example.bookswapkz.R
 import com.example.bookswapkz.databinding.FragmentRegisterBinding
 import com.example.bookswapkz.viewmodels.BookViewModel
+import com.google.firebase.auth.FirebaseUser // <-- Импорт FirebaseUser
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class RegisterFragment : Fragment() {
     private var _binding: FragmentRegisterBinding? = null
     private val binding get() = _binding!!
@@ -62,29 +65,24 @@ class RegisterFragment : Fragment() {
         val street = binding.streetEditText.text.toString().trim()
         val houseNumber = binding.houseNumberEditText.text.toString().trim()
 
-        // Валидация ввода
         if (name.isEmpty() || nickname.isEmpty() || email.isEmpty() || password.isEmpty() ||
             confirmPassword.isEmpty() || ageStr.isEmpty() || phone.isEmpty() || city.isEmpty() ||
             street.isEmpty() || houseNumber.isEmpty()) {
             Toast.makeText(requireContext(), "Пожалуйста, заполните все поля", Toast.LENGTH_SHORT).show()
             return
         }
-
         if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             Toast.makeText(requireContext(), "Введите корректный Email", Toast.LENGTH_SHORT).show()
             return
         }
-
         if (password.length < 6) {
             Toast.makeText(requireContext(), "Пароль должен быть не менее 6 символов", Toast.LENGTH_SHORT).show()
             return
         }
-
         if (password != confirmPassword) {
             Toast.makeText(requireContext(), "Пароли не совпадают", Toast.LENGTH_SHORT).show()
             return
         }
-
         val age = ageStr.toIntOrNull()
         if (age == null || age <= 0) {
             Toast.makeText(requireContext(), "Неверный формат возраста", Toast.LENGTH_SHORT).show()
@@ -93,20 +91,31 @@ class RegisterFragment : Fragment() {
 
         binding.progressBar.isVisible = true
         binding.registerButton.isEnabled = false
-
         Log.d("RegisterFragment", "Attempting to register with email: [$email]")
 
-        viewModel.registerUser(nickname, name, city, street, houseNumber, age, phone, email, password)
-            .observe(viewLifecycleOwner) { success ->
-                binding.progressBar.isVisible = false
-                binding.registerButton.isEnabled = true
-
-                if (success) {
-                    Toast.makeText(requireContext(), "Регистрация успешна!", Toast.LENGTH_SHORT).show()
-                    findNavController().navigate(R.id.action_register_to_home)
-                }
-
+        viewModel.registerUser(
+            nickname = nickname,
+            name = name,
+            city = city,
+            street = street,
+            houseNumber = houseNumber,
+            age = age,
+            phone = phone,
+            email = email,
+            password = password
+        ).observe(viewLifecycleOwner) { result ->
+            binding.registerButton.isEnabled = true
+            binding.progressBar.visibility = View.GONE
+            
+            result.onSuccess {
+                Toast.makeText(requireContext(), "Регистрация успешна", Toast.LENGTH_SHORT).show()
+                findNavController().navigate(R.id.action_register_to_home)
             }
+            
+            result.onFailure { error ->
+                Toast.makeText(requireContext(), "Ошибка: ${error.message}", Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     override fun onDestroyView() {

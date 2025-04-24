@@ -70,7 +70,7 @@
                 android:id="@+id/rentSwitch"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Сдать в аренду"
+                android:text="@string/rent_switch"
                 android:textSize="16sp" />
 
             <LinearLayout
@@ -85,7 +85,7 @@
                     android:id="@+id/rentPriceLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Цена аренды (₸)"
+                    android:hint="@string/rent_price_hint"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -96,12 +96,30 @@
 
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <Spinner
-                    android:id="@+id/rentPeriodSpinner"
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/rentDurationLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/rent_duration_hint"
+                    android:layout_marginTop="8dp"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/rentDurationEditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="number" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <TextView
+                    android:id="@+id/totalPriceTextView"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:minHeight="48dp" />
+                    android:text="Итого: 0 ₸"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
             </LinearLayout>
 

@@ -109,11 +109,27 @@
     <fragment
         android:id="@+id/bookDetailFragment"
         android:name="com.example.bookswapkz.fragments.BookDetailFragment"
-        android:label="Book Detail"
+        android:label="Book Details"
         tools:layout="@layout/fragment_book_detail">
         <argument
             android:name="book"
             app:argType="com.example.bookswapkz.models.Book" />
+        <action
+            android:id="@+id/action_bookDetailFragment_to_chatFragment"
+            app:destination="@id/chatFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/chatFragment"
+        android:name="com.example.bookswapkz.fragments.ChatFragment"
+        android:label="Chat"
+        tools:layout="@layout/fragment_chat">
+        <argument
+            android:name="userId"
+            app:argType="string" />
+        <argument
+            android:name="userName"
+            app:argType="string" />
     </fragment>
 
     <fragment
