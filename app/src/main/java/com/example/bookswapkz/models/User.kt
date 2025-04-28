@@ -14,9 +14,10 @@ data class User(
     val city: String = "",
     val street: String = "",
     val houseNumber: String = "",
-    val phone: String = ""
+    val phone: String = "",
+    val photoUrl: String = ""
     // Добавьте другие поля, если нужно (например, profileImageUrl: String? = null)
 ) : Parcelable {
     // Пустой конструктор для Firestore
-    constructor() : this("", "", "", "", 0, "", "", "", "")
+    constructor() : this("", "", "", "", 0, "", "", "", "", "")
 }

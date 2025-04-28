@@ -6,75 +6,91 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.bookswapkz.adapters.MessagesAdapter
-import com.example.bookswapkz.databinding.FragmentChatBinding
+import com.example.bookswapkz.databinding.FragmentChatDetailBinding
 import com.example.bookswapkz.models.Chat
 import com.example.bookswapkz.viewmodels.ChatViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class ChatFragment : Fragment() {
 
-    private var _binding: FragmentChatBinding? = null
+    private var _binding: FragmentChatDetailBinding? = null
     private val binding get() = _binding!!
+
     private val viewModel: ChatViewModel by viewModels()
     private val args: ChatFragmentArgs by navArgs()
-    private lateinit var messagesAdapter: MessagesAdapter
+    private val messagesAdapter = MessagesAdapter()
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentChatBinding.inflate(inflater, container, false)
+        _binding = FragmentChatDetailBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setupUI()
-        setupObservers()
+        setupRecyclerView()
+        setupClickListeners()
+        observeViewModel()
         loadMessages()
     }
 
-    private fun setupUI() {
-        // Setup toolbar
-        binding.backButton.setOnClickListener {
-            findNavController().navigateUp()
-        }
-        binding.userName.text = args.userName
-
-        // Setup RecyclerView
-        messagesAdapter = MessagesAdapter()
+    private fun setupRecyclerView() {
         binding.messagesRecyclerView.apply {
             adapter = messagesAdapter
-            layoutManager = LinearLayoutManager(context).apply {
+            layoutManager = LinearLayoutManager(requireContext()).apply {
                 stackFromEnd = true
-            }
-        }
-
-        // Setup send button
-        binding.sendButton.setOnClickListener {
-            val message = binding.messageInput.text.toString().trim()
-            if (message.isNotEmpty()) {
-                viewModel.sendMessage(args.userId, message)
-                binding.messageInput.text.clear()
             }
         }
     }
 
-    private fun setupObservers() {
-        viewModel.messages.observe(viewLifecycleOwner) { messages ->
-            messagesAdapter.submitList(messages)
-            binding.messagesRecyclerView.scrollToPosition(messages.size - 1)
+    private fun setupClickListeners() {
+        binding.sendButton.setOnClickListener {
+            val messageText = binding.messageEditText.text?.toString()?.trim() ?: ""
+            if (messageText.isNotEmpty()) {
+                viewModel.sendMessage(args.chatId, messageText)
+                binding.messageEditText.text?.clear()
+            }
+        }
+    }
+
+    private fun observeViewModel() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.currentChatMessages.collect { messages ->
+                    messagesAdapter.submitList(messages)
+                    if (messages.isNotEmpty()) {
+                        binding.messagesRecyclerView.smoothScrollToPosition(messages.size - 1)
+                    }
+                }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.errorMessage.collect { error ->
+                    error?.let {
+                        // Show error message
+                    }
+                }
+            }
         }
     }
 
     private fun loadMessages() {
-        viewModel.loadMessages(args.userId)
+        viewModel.loadMessages(args.chatId)
     }
 
     override fun onDestroyView() {

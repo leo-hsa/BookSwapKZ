@@ -138,6 +138,26 @@
         android:label="Edit Profile"
         tools:layout="@layout/fragment_edit_profile" />
 
+    <fragment
+        android:id="@+id/chatsListFragment"
+        android:name="com.example.bookswapkz.fragments.ChatListFragment"
+        android:label="Chats"
+        tools:layout="@layout/fragment_chats_list">
+        <action
+            android:id="@+id/action_chatsList_to_chatDetail"
+            app:destination="@id/chatDetailFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/chatDetailFragment"
+        android:name="com.example.bookswapkz.fragments.ChatFragment"
+        android:label="Chat"
+        tools:layout="@layout/fragment_chat_detail">
+        <argument
+            android:name="chatId"
+            app:argType="string" />
+    </fragment>
+
     <action android:id="@+id/action_global_loginFragment"
         app:destination="@id/loginFragment"
         app:launchSingleTop="true"

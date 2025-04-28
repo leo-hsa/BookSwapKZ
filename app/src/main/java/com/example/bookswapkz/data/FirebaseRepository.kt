@@ -2,13 +2,26 @@ package com.example.bookswapkz.data
 
 import android.net.Uri
 import com.example.bookswapkz.models.Book
+import com.example.bookswapkz.models.Chat
 import com.example.bookswapkz.models.Exchange
+import com.example.bookswapkz.models.Message
+import com.example.bookswapkz.models.ParticipantInfo
 import com.example.bookswapkz.models.User
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.SetOptions
+import com.google.firebase.firestore.Source
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.util.UUID
@@ -32,6 +45,12 @@ class FirebaseRepository @Inject constructor(
     
     // Storage reference for book images
     private val bookImagesRef: StorageReference = storage.reference.child("book_images")
+    
+    // Chat collection reference
+    private val chatsCollection = firestore.collection("chats")
+    
+    // Messages collection reference
+    private val messagesCollection = firestore.collection("messages")
     
     // Get current user ID
     val currentUserId: String?
@@ -323,6 +342,139 @@ class FirebaseRepository @Inject constructor(
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    // Chat Related Operations
+    
+    /**
+     * Get or create a chat with another user
+     */
+    suspend fun getOrCreateChat(userId1: String, userId2: String): Chat {
+        val chatId = listOf(userId1, userId2).sorted().joinToString("_")
+        
+        return try {
+            // Try to get existing chat
+            val chatDoc = chatsCollection.document(chatId).get().await()
+            if (chatDoc.exists()) {
+                chatDoc.toObject(Chat::class.java) ?: throw Exception("Failed to parse chat")
+            } else {
+                // Create new chat
+                val user1Result = getUserById(userId1)
+                val user2Result = getUserById(userId2)
+                
+                if (user1Result.isFailure || user2Result.isFailure) {
+                    throw Exception("Failed to get user information")
+                }
+                
+                val user1 = user1Result.getOrNull()!!
+                val user2 = user2Result.getOrNull()!!
+                
+                val chat = Chat(
+                    chatId = chatId,
+                    participantIds = listOf(userId1, userId2),
+                    participantInfo = mapOf(
+                        userId1 to ParticipantInfo(
+                            name = user1.name,
+                            photoUrl = user1.photoUrl
+                        ),
+                        userId2 to ParticipantInfo(
+                            name = user2.name,
+                            photoUrl = user2.photoUrl
+                        )
+                    )
+                )
+                
+                chatsCollection.document(chatId).set(chat).await()
+                chat
+            }
+        } catch (e: Exception) {
+            throw Exception("Failed to get or create chat: ${e.message}")
+        }
+    }
+    
+    /**
+     * Get user's chats as a Flow
+     */
+    fun getUserChatsFlow(userId: String): Flow<List<Chat>> = callbackFlow {
+        val subscription = chatsCollection
+            .whereArrayContains("participantIds", userId)
+            .orderBy("lastMessageTimestamp", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+
+                if (snapshot != null) {
+                    val chats = snapshot.documents.mapNotNull { doc ->
+                        doc.toObject(Chat::class.java)
+                    }
+                    trySend(chats)
+                }
+            }
+
+        awaitClose { subscription.remove() }
+    }
+    
+    /**
+     * Get chat messages as a Flow
+     */
+    fun getChatMessagesFlow(chatId: String): Flow<List<Message>> = callbackFlow {
+        val subscription = chatsCollection
+            .document(chatId)
+            .collection("messages")
+            .orderBy("timestamp", Query.Direction.ASCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+
+                if (snapshot != null) {
+                    val messages = snapshot.documents.mapNotNull { doc ->
+                        doc.toObject(Message::class.java)
+                    }
+                    trySend(messages)
+                }
+            }
+
+        awaitClose { subscription.remove() }
+    }
+    
+    /**
+     * Send a message in a chat
+     */
+    suspend fun sendMessage(chatId: String, senderId: String, text: String) {
+        try {
+            val message = Message(
+                chatId = chatId,
+                senderId = senderId,
+                text = text,
+                timestamp = Timestamp.now()
+            )
+
+            val batch = firestore.batch()
+
+            // Add message to messages subcollection
+            val messageRef = chatsCollection
+                .document(chatId)
+                .collection("messages")
+                .document()
+            batch.set(messageRef, message)
+
+            // Update chat document with last message info
+            val chatRef = chatsCollection.document(chatId)
+            batch.update(
+                chatRef,
+                "lastMessageText", text,
+                "lastMessageTimestamp", message.timestamp,
+                "lastMessageSenderId", senderId
+            )
+
+            batch.commit().await()
+        } catch (e: Exception) {
+            throw Exception("Failed to send message: ${e.message}")
         }
     }
 } 

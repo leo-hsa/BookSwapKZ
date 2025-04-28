@@ -56,6 +56,7 @@ dependencies {
     implementation("com.google.firebase:firebase-auth-ktx:23.0.0")
     // implementation("com.google.firebase:firebase-database-ktx:21.0.0") // Удалите, если используете Firestore
     implementation("com.google.firebase:firebase-firestore-ktx:25.0.0") // Firestore
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
 
     // Glide

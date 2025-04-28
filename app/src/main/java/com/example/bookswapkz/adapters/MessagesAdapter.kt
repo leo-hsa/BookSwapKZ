@@ -1,70 +1,98 @@
 package com.example.bookswapkz.adapters
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.example.bookswapkz.R
-import com.example.bookswapkz.models.Chat
+import com.example.bookswapkz.databinding.ItemMessageIncomingBinding
+import com.example.bookswapkz.databinding.ItemMessageOutgoingBinding
+import com.example.bookswapkz.models.Message
 import com.google.firebase.auth.FirebaseAuth
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
-class MessagesAdapter : ListAdapter<Chat, MessagesAdapter.MessageViewHolder>(MessageDiffCallback()) {
+class MessagesAdapter : ListAdapter<Message, RecyclerView.ViewHolder>(MessageDiffCallback()) {
 
-    private val dateFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
     private val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MessageViewHolder {
-        val layout = if (viewType == VIEW_TYPE_MY_MESSAGE) {
-            R.layout.item_message_sent
-        } else {
-            R.layout.item_message_received
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        return when (viewType) {
+            VIEW_TYPE_OUTGOING -> {
+                val binding = ItemMessageOutgoingBinding.inflate(
+                    LayoutInflater.from(parent.context),
+                    parent,
+                    false
+                )
+                OutgoingMessageViewHolder(binding)
+            }
+            else -> {
+                val binding = ItemMessageIncomingBinding.inflate(
+                    LayoutInflater.from(parent.context),
+                    parent,
+                    false
+                )
+                IncomingMessageViewHolder(binding)
+            }
         }
-        
-        val view = LayoutInflater.from(parent.context).inflate(layout, parent, false)
-        return MessageViewHolder(view)
     }
 
-    override fun onBindViewHolder(holder: MessageViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val message = getItem(position)
-        holder.bind(message)
+        when (holder) {
+            is OutgoingMessageViewHolder -> holder.bind(message)
+            is IncomingMessageViewHolder -> holder.bind(message)
+        }
     }
 
     override fun getItemViewType(position: Int): Int {
         val message = getItem(position)
-        return if (message.senderId == currentUserId) {
-            VIEW_TYPE_MY_MESSAGE
-        } else {
-            VIEW_TYPE_OTHER_MESSAGE
+        return if (message.senderId == currentUserId) VIEW_TYPE_OUTGOING else VIEW_TYPE_INCOMING
+    }
+
+    inner class OutgoingMessageViewHolder(
+        private val binding: ItemMessageOutgoingBinding
+    ) : RecyclerView.ViewHolder(binding.root) {
+
+        fun bind(message: Message) {
+            binding.apply {
+                tvMessage.text = message.text
+                message.timestamp?.let { timestamp ->
+                    val dateFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+                    tvTime.text = dateFormat.format(timestamp)
+                }
+            }
         }
     }
 
-    inner class MessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val messageText: TextView = itemView.findViewById(R.id.messageText)
-        private val messageTime: TextView = itemView.findViewById(R.id.messageTime)
+    inner class IncomingMessageViewHolder(
+        private val binding: ItemMessageIncomingBinding
+    ) : RecyclerView.ViewHolder(binding.root) {
 
-        fun bind(message: Chat) {
-            messageText.text = message.message
-            messageTime.text = dateFormat.format(Date(message.timestamp))
+        fun bind(message: Message) {
+            binding.apply {
+                tvMessage.text = message.text
+                message.timestamp?.let { timestamp ->
+                    val dateFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+                    tvTime.text = dateFormat.format(timestamp)
+                }
+            }
         }
     }
 
-    private class MessageDiffCallback : DiffUtil.ItemCallback<Chat>() {
-        override fun areItemsTheSame(oldItem: Chat, newItem: Chat): Boolean {
+    private class MessageDiffCallback : DiffUtil.ItemCallback<Message>() {
+        override fun areItemsTheSame(oldItem: Message, newItem: Message): Boolean {
             return oldItem.id == newItem.id
         }
 
-        override fun areContentsTheSame(oldItem: Chat, newItem: Chat): Boolean {
+        override fun areContentsTheSame(oldItem: Message, newItem: Message): Boolean {
             return oldItem == newItem
         }
     }
 
     companion object {
-        private const val VIEW_TYPE_MY_MESSAGE = 1
-        private const val VIEW_TYPE_OTHER_MESSAGE = 2
+        private const val VIEW_TYPE_OUTGOING = 1
+        private const val VIEW_TYPE_INCOMING = 2
     }
 } 
