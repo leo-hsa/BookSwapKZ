@@ -39,7 +39,7 @@ class BookViewModel @Inject constructor(
     val errorMessage: LiveData<String?> get() = _errorMessage
     private val _exchangeResult = MutableLiveData<Result<Unit>?>()
     val exchangeResult: LiveData<Result<Unit>?> get() = _exchangeResult
-    private val _isLoading = MutableLiveData<Boolean>(false) // Начальное значение false
+    private val _isLoading = MutableLiveData<Boolean>(false)
     val isLoading: LiveData<Boolean> get() = _isLoading
     private val _givenExchanges = MutableLiveData<List<Exchange>>()
     val givenExchanges: LiveData<List<Exchange>> get() = _givenExchanges
@@ -48,13 +48,11 @@ class BookViewModel @Inject constructor(
     private val _chatList = MutableLiveData<List<Chat>>()
     val chatList: LiveData<List<Chat>> get() = _chatList
 
-
     init {
         val currentUser = auth.currentUser
         Log.d("BookViewModel", "ViewModel Initialized. Current auth state: user=${currentUser?.uid}, isLoggedIn=${currentUser != null}")
         observeAuthState()
-        
-        // Force load if user is already logged in
+
         if (currentUser != null && _user.value == null) {
             Log.d("BookViewModel", "User logged in but data not loaded, forcing initial load")
             loadCurrentUserAndData(currentUser.uid)
@@ -66,11 +64,8 @@ class BookViewModel @Inject constructor(
         auth.addAuthStateListener { firebaseAuth ->
             val firebaseUser = firebaseAuth.currentUser
             Log.d("BookViewModel", "Auth state changed - User: ${firebaseUser?.uid}")
-            
+
             if (firebaseUser != null) {
-                val currentUserId = _user.value?.userId
-                Log.d("BookViewModel", "Comparing current user ${currentUserId} with Firebase user ${firebaseUser.uid}")
-                
                 if (_user.value?.userId != firebaseUser.uid) {
                     Log.d("BookViewModel", "User changed or not loaded, loading data...")
                     loadCurrentUserAndData(firebaseUser.uid)
@@ -83,10 +78,9 @@ class BookViewModel @Inject constructor(
             }
         }
 
-        // Also load data on start if user is already logged in
         val currentUser = auth.currentUser
         Log.d("BookViewModel", "Initial auth check - Current user: ${currentUser?.uid}")
-        
+
         if (currentUser != null) {
             Log.d("BookViewModel", "User already logged in, loading initial data")
             loadCurrentUserAndData(currentUser.uid)
@@ -97,10 +91,9 @@ class BookViewModel @Inject constructor(
         }
     }
 
-    // Очистка данных при выходе пользователя
     private fun clearUserData() {
         _user.postValue(null)
-        _allBooks.postValue(emptyList()) // Возможно, все книги все равно надо показывать? Зависит от логики.
+        _allBooks.postValue(emptyList())
         _myBooks.postValue(emptyList())
         _givenExchanges.postValue(emptyList())
         _receivedExchanges.postValue(emptyList())
@@ -109,7 +102,6 @@ class BookViewModel @Inject constructor(
         Log.d("BookViewModel", "User data cleared.")
     }
 
-    // Загрузка данных для ВОШЕДШЕГО пользователя
     private fun loadCurrentUserAndData(userId: String) {
         Log.d("BookViewModel", "Starting to load data for user: $userId")
         viewModelScope.launch {
@@ -117,15 +109,11 @@ class BookViewModel @Inject constructor(
                 _isLoading.postValue(true)
                 Log.d("BookViewModel", "Getting user data from repository")
                 val userResult = repository.getUserById(userId)
-                
+
                 userResult.onSuccess { currentUser ->
                     Log.d("BookViewModel", "Successfully loaded user: ${currentUser.nickname}")
                     _user.postValue(currentUser)
-                    
-                    launch {
-                        Log.d("BookViewModel", "Starting to fetch user books")
-                        fetchUserBooksInternal(currentUser.userId)
-                    }
+                    launch { fetchUserBooksInternal(currentUser.userId) }
                     launch { loadUserExchangeHistory(currentUser.userId) }
                     launch { loadUserChats() }
                     launch { fetchAllBooksInternal() }
@@ -143,10 +131,7 @@ class BookViewModel @Inject constructor(
         }
     }
 
-    // Остальные методы теперь используют поля из ViewModel
-    // и вызывают suspend функции репозитория
-
-    private suspend fun fetchAllBooksInternal() { // Сделали suspend
+    private suspend fun fetchAllBooksInternal() {
         val booksResult = repository.getAllBooks()
         booksResult.onSuccess { _allBooks.postValue(it ?: emptyList()) }
             .onFailure { _errorMessage.postValue("Книги: ${it.localizedMessage}") }
@@ -163,7 +148,6 @@ class BookViewModel @Inject constructor(
         try {
             Log.d("BookViewModel", "Fetching books from repository")
             val booksResult = repository.getUserBooks(userId)
-            
             booksResult.onSuccess { books ->
                 val bookCount = books?.size ?: 0
                 Log.d("BookViewModel", "Successfully fetched $bookCount books")
@@ -180,16 +164,15 @@ class BookViewModel @Inject constructor(
         }
     }
 
-    fun addBook(book: Book, imageUri: Uri?): LiveData<Result<String>> { // Возвращает LiveData<r>
+    fun addBook(book: Book, imageUri: Uri?): LiveData<Result<String>> {
         val result = MutableLiveData<Result<String>>()
         viewModelScope.launch {
             _isLoading.postValue(true)
             val addResult = repository.addBook(book, imageUri)
             result.postValue(addResult)
             addResult.onFailure { _errorMessage.postValue("Добавление: ${it.localizedMessage}") }
-            if (addResult.isSuccess) { 
-                fetchAllBooksInternal() // Обновляем общий список
-                // Также обновляем список пользовательских книг
+            if (addResult.isSuccess) {
+                fetchAllBooksInternal()
                 auth.currentUser?.uid?.let { userId ->
                     Log.d("BookViewModel", "Reloading user books after adding new book")
                     fetchUserBooksInternal(userId)
@@ -222,19 +205,17 @@ class BookViewModel @Inject constructor(
         return result
     }
 
-    fun loginUser(email: String, password: String): LiveData<Result<FirebaseUser>> { // Возвращает LiveData<Result>
+    fun loginUser(email: String, password: String): LiveData<Result<FirebaseUser>> {
         val result = MutableLiveData<Result<FirebaseUser>>()
         viewModelScope.launch {
             _isLoading.postValue(true)
             val loginResult = repository.loginUser(email, password)
             result.postValue(loginResult)
-            // observeAuthState сам обработает нового пользователя
             loginResult.onFailure { _errorMessage.postValue("Вход: ${it.localizedMessage}") }
             _isLoading.postValue(false)
         }
         return result
     }
-
 
     fun triggerExchange(bookToExchange: Book) {
         val currentUser = _user.value
@@ -260,7 +241,6 @@ class BookViewModel @Inject constructor(
 
             if (exchangeRepoResult.isSuccess) {
                 Log.i("BookViewModel", "Exchange recorded successfully in repo for book ${bookToExchange.id}")
-                // Данные в репозитории обновились, запрашиваем их снова
                 launch { fetchAllBooksInternal() }
                 launch { fetchUserBooksInternal(currentUser.userId) }
                 launch { loadUserExchangeHistory(currentUser.userId) }
@@ -276,7 +256,7 @@ class BookViewModel @Inject constructor(
     fun loadUserExchangeHistory(userId: String) {
         if (userId.isBlank()) return
         viewModelScope.launch {
-            _isLoading.postValue(true) // Возможно, нужен отдельный isLoading для истории
+            _isLoading.postValue(true)
             val historyResult = repository.getUserExchangeHistory(userId)
             historyResult.onSuccess { (given, received) ->
                 _givenExchanges.postValue(given)
@@ -291,6 +271,22 @@ class BookViewModel @Inject constructor(
         }
     }
 
+    fun loadUserChats() {
+        val userId = auth.currentUser?.uid ?: return
+        viewModelScope.launch {
+            _isLoading.postValue(true)
+            repository.getUserChatsFlow(userId)
+                .catch { e ->
+                    _errorMessage.postValue("Чаты: ${e.localizedMessage}")
+                    _isLoading.postValue(false)
+                }
+                .collect { result ->
+                    result.onSuccess { chats -> _chatList.postValue(chats) }
+                        .onFailure { _errorMessage.postValue("Чаты: ${it.localizedMessage}") }
+                    _isLoading.postValue(false)
+                }
+        }
+    }
 
     fun saveUser(user: User) {
         viewModelScope.launch {
@@ -298,8 +294,6 @@ class BookViewModel @Inject constructor(
             val result = repository.updateUser(user)
             result.onSuccess {
                 _user.postValue(user)
-                // Показываем сообщение об успехе через LiveData, если нужно
-                // _userUpdateSuccess.postValue(true)
             }.onFailure { error ->
                 _errorMessage.postValue("Не удалось сохранить профиль: ${error.localizedMessage}")
             }
@@ -309,43 +303,22 @@ class BookViewModel @Inject constructor(
 
     fun clearErrorMessage() { _errorMessage.value = null }
 
-    // Метод для чата
     fun getOrCreateChatForNavigation(otherUserId: String): LiveData<Result<String>> {
         val result = MutableLiveData<Result<String>>()
         val currentUserId = auth.currentUser?.uid
 
-        if (currentUserId == null || otherUserId == currentUserId) {
+        if (currentUserId == null || otherUserId == currentUserId) { // Fixed syntax
             result.postValue(Result.failure(Exception(if (currentUserId == null) "Сначала войдите" else "Нельзя чатиться с собой")))
             return result
         }
         viewModelScope.launch {
             _isLoading.postValue(true)
-            val chatResult = repository.getOrCreateChat(currentUserId, otherUserId) // Вызываем репо
-            result.postValue(chatResult) // Передаем результат
+            val chatResult = repository.getOrCreateChat(currentUserId, otherUserId)
+            result.postValue(chatResult)
             chatResult.onFailure { _errorMessage.postValue("Чат: ${it.localizedMessage}") }
             _isLoading.postValue(false)
         }
         return result
-    }
-
-    // Метод для загрузки списка чатов (для ChatListFragment)
-    fun loadUserChats() {
-        val userId = auth.currentUser?.uid ?: return
-        viewModelScope.launch {
-            _isLoading.postValue(true)
-            repository.getUserChatsFlow(userId) // Получаем Flow
-                .catch { e ->
-                    _errorMessage.postValue("Чаты: ${e.localizedMessage}")
-                    _isLoading.postValue(false) // Обязательно сбрасываем загрузку при ошибке
-                }
-                .collect { result -> // Собираем Result из Flow
-                    result.onSuccess { chats -> _chatList.postValue(chats) } // Обновляем LiveData
-                        .onFailure { _errorMessage.postValue("Чаты: ${it.localizedMessage}") }
-                    // isLoading сбросится, когда Flow завершится или будет ошибка
-                    _isLoading.postValue(false) // Пока ставим здесь
-                }
-            // Альтернатива - использовать stateIn для преобразования Flow в StateFlow внутри ViewModel
-        }
     }
 
     fun loadMyBooks() {
@@ -366,6 +339,5 @@ class BookViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         Log.d("BookViewModel", "ViewModel Cleared")
-        // auth.removeAuthStateListener(..) // Важно удалить слушатель Auth!
     }
 }

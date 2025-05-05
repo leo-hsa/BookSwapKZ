@@ -16,6 +16,7 @@ import androidx.navigation.fragment.findNavController
 import com.example.bookswapkz.R
 import com.example.bookswapkz.databinding.FragmentAddBookBinding
 import com.example.bookswapkz.models.Book
+import com.example.bookswapkz.models.BookType
 import com.example.bookswapkz.viewmodels.BookViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -24,7 +25,6 @@ class AddBookFragment : Fragment() {
     private var _binding: FragmentAddBookBinding? = null
     private val binding get() = _binding!!
     private val viewModel: BookViewModel by viewModels({ requireActivity() })
-    private var isForRent: Boolean = false
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -39,21 +39,18 @@ class AddBookFragment : Fragment() {
         setupRentalSection()
         observeViewModel()
         binding.addBookButton.setOnClickListener { addBook() }
-        
-        // Настройка тулбара для возврата назад
+
         binding.toolbar.setNavigationOnClickListener {
             findNavController().popBackStack()
         }
     }
 
     private fun setupSpinners() {
-        // Setup condition spinner
         val conditions = arrayOf("Отличное", "Хорошее", "Удовлетворительное", "Требует ремонта")
         val conditionAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, conditions)
         conditionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.conditionSpinner.adapter = conditionAdapter
 
-        // Setup city spinner
         val cities = resources.getStringArray(R.array.cities)
         val cityAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, cities)
         cityAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
@@ -61,16 +58,14 @@ class AddBookFragment : Fragment() {
     }
 
     private fun setupRentalSection() {
-        // По умолчанию "Обмен" активен
         binding.exchangeTypeButton.setOnClickListener {
             setExchangeMode()
         }
-        
+
         binding.rentTypeButton.setOnClickListener {
             setRentMode()
         }
-        
-        // Устанавливаем изначальный режим "Обмен"
+
         setExchangeMode()
 
         binding.rentPriceEditText.addTextChangedListener(object : TextWatcher {
@@ -85,9 +80,8 @@ class AddBookFragment : Fragment() {
             override fun afterTextChanged(s: Editable?) { updateTotalPrice() }
         })
     }
-    
+
     private fun setExchangeMode() {
-        isForRent = false
         binding.exchangeTypeButton.backgroundTintList = resources.getColorStateList(R.color.teal, null)
         binding.exchangeTypeButton.setTextColor(resources.getColor(android.R.color.white, null))
         binding.rentTypeButton.backgroundTintList = resources.getColorStateList(android.R.color.white, null)
@@ -97,9 +91,8 @@ class AddBookFragment : Fragment() {
         binding.rentHoursEditText.text?.clear()
         updateTotalPrice()
     }
-    
+
     private fun setRentMode() {
-        isForRent = true
         binding.rentTypeButton.backgroundTintList = resources.getColorStateList(R.color.teal, null)
         binding.rentTypeButton.setTextColor(resources.getColor(android.R.color.white, null))
         binding.exchangeTypeButton.backgroundTintList = resources.getColorStateList(android.R.color.white, null)
@@ -125,7 +118,7 @@ class AddBookFragment : Fragment() {
                 binding.progressBar?.isVisible = false
                 binding.addBookButton?.isEnabled = viewModel.user.value?.phone?.isNotBlank() == true
                 Toast.makeText(requireContext(), "Ошибка: $error", Toast.LENGTH_LONG).show()
-                viewModel.clearErrorMessage()
+                viewModel.clearErrorMessage() // This method exists in BookViewModel
             }
         }
     }
@@ -150,12 +143,18 @@ class AddBookFragment : Fragment() {
             return
         }
 
-        val rentPrice = if (isForRent) binding.rentPriceEditText.text.toString().toDoubleOrNull() else null
-        val rentHours = if (isForRent) binding.rentHoursEditText.text.toString().toIntOrNull() else null
+        val rentPrice = binding.rentPriceEditText.text.toString().toDoubleOrNull()
+        val rentHours = binding.rentHoursEditText.text.toString().toIntOrNull()
+        val rentPeriod = if (rentHours != null) "$rentHours ч." else null
 
-        if (isForRent && (rentPrice == null || rentHours == null)) {
+        if (binding.rentOptionsLayout.isVisible && (rentPrice == null || rentHours == null)) {
             Toast.makeText(requireContext(), "Заполните данные об аренде", Toast.LENGTH_SHORT).show()
             return
+        }
+
+        val bookType = when {
+            binding.rentOptionsLayout.isVisible -> BookType.RENT
+            else -> BookType.EXCHANGE
         }
 
         val book = Book(
@@ -166,9 +165,9 @@ class AddBookFragment : Fragment() {
             phone = currentUserPhone,
             ownerNickname = currentUserNickname,
             timestamp = System.currentTimeMillis(),
-            isForRent = isForRent,
+            bookType = bookType,
             rentPrice = rentPrice,
-            rentPeriod = if (rentHours != null) "$rentHours ч." else null
+            rentPeriod = rentPeriod
         )
 
         binding.progressBar?.isVisible = true
@@ -176,13 +175,13 @@ class AddBookFragment : Fragment() {
 
         viewModel.addBook(book, null).observe(viewLifecycleOwner) { bookIdResult ->
             binding.progressBar?.isVisible = false
-            
+
             bookIdResult.onSuccess { bookId ->
                 Toast.makeText(requireContext(), "Книга успешно добавлена!", Toast.LENGTH_SHORT).show()
                 Log.d("AddBookFragment", "Book added with ID: $bookId")
                 findNavController().popBackStack()
             }
-            
+
             bookIdResult.onFailure { error ->
                 Log.e("AddBookFragment", "Failed to add book", error)
                 binding.addBookButton.isEnabled = viewModel.user.value?.phone?.isNotBlank() == true

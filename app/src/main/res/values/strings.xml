@@ -6,40 +6,44 @@
     <string name="name_hint">Имя</string>
     <string name="nickname_hint">Никнейм</string>
     <string name="nickname">Никнейм</string>
-    <string name="email_hint">Email</string> <!-- Добавлено для нового поля -->
+    <string name="email_hint">Email</string>
     <string name="password_hint">Пароль</string>
     <string name="confirm_password_hint">Подтвердите пароль</string>
     <string name="age_hint">Возраст</string>
     <string name="phone_hint">Телефон</string>
     <string name="city_hint">Город</string>
-    <string name="street_hint">Улица</string> <!-- Изменено -->
-    <string name="house_number_hint">Номер дома, квартиры</string> <!-- Изменено -->
+    <string name="street_hint">Улица</string>
+    <string name="house_number_hint">Номер дома, квартиры</string>
     <string name="title_hint">Название книги</string>
     <string name="author_hint">Автор</string>
-    <string name="condition_hint">Состояние</string> <!-- Может не использоваться, т.к. Spinner -->
-    <string name="search_hint">Поиск по названию, автору, городу</string> <!-- Уточнено -->
+    <string name="condition_hint">Состояние</string>
+    <string name="search_hint">Поиск по названию, автору, городу</string>
     <string name="filters">Фильтры</string>
     <string name="book_type">Тип книги</string>
     <string name="price_type">Тип цены</string>
     <string name="city">Город</string>
     <string name="apply">ПРИМЕНИТЬ</string>
-
     <string name="reset">СБРОСИТЬ</string>
 
     <!-- Типы фильтров -->
     <string name="all_books">Все книги</string>
     <string name="for_rent">Для аренды</string>
+    <string name="for_exchange">Для обмена</string> <!-- Добавлено -->
     <string name="all_prices">Все цены</string>
     <string name="free">Бесплатно</string>
     <string name="paid">Платно</string>
+    <string name="price_range_low">До 500 ₸</string> <!-- Добавлено -->
+    <string name="price_range_medium">500-1000 ₸</string> <!-- Добавлено -->
+    <string name="price_range_high">Свыше 1000 ₸</string> <!-- Добавлено -->
     <string name="all_cities">Все города</string>
+    <string name="all_conditions">Все состояния</string> <!-- Добавлено -->
 
     <!-- Тексты кнопок -->
     <string name="register_button">Зарегистрироваться</string>
     <string name="login_button">Войти</string>
     <string name="logout_button">Выйти</string>
     <string name="add_book_button">Добавить книгу</string>
-    <string name="select_image">Выбрать изображение</string> <!-- Оставляем, если вернем картинки -->
+    <string name="select_image">Выбрать изображение</string>
     <string name="call_button">Позвонить</string>
     <string name="save">Сохранить</string>
     <string name="cancel">Отмена</string>
@@ -48,27 +52,27 @@
     <string name="register_link"><u>Нет аккаунта? Зарегистрироваться</u></string>
     <string name="login_link"><u>Уже есть аккаунт? Войти</u></string>
 
-    <!-- Меню навигации (для BottomNavigationView или NavigationView) -->
+    <!-- Меню навигации -->
     <string name="menu_home">Главная</string>
     <string name="menu_my_books">Мои книги</string>
     <string name="menu_rent">Аренда</string>
     <string name="menu_profile">Профиль</string>
-    <string name="menu_logout">Выйти</string> <!-- Используется для обработки клика в NavigationView -->
+    <string name="menu_logout">Выйти</string>
 
     <!-- Заголовки/Тексты экранов -->
     <string name="add_book">Добавить книгу</string>
-    <string name="edit_profile">Редактировать профиль</string> <!-- Изменено -->
+    <string name="edit_profile">Редактировать профиль</string>
     <string name="my_books">Мои Книги</string>
     <string name="exchange_history">История обменов</string>
 
     <!-- Форматы и состояния -->
     <string name="owner_count_format">Владельцев: %d</string>
     <string name="rent_info_format">%1$.0f ₸ за %2$d часов (всего: %3$.0f ₸)</string>
-    <string name="no_books_found">Книги не найдены. Добавьте первую!</string> <!-- Использовалось раньше -->
-    <string name="no_books_added_yet">Пока нет добавленных книг.</string> <!-- Используется в HomeFragment -->
-    <string name="no_books_found_filters">Книги по вашим фильтрам не найдены.</string> <!-- Используется в HomeFragment -->
-    <string name="error_loading_books">Ошибка загрузки книг. Попробуйте позже.</string> <!-- Используется в HomeFragment -->
-    <string name="no_books_available">Нет доступных книг</string> <!-- Может пригодиться -->
+    <string name="no_books_found">Книги не найдены. Добавьте первую!</string>
+    <string name="no_books_added_yet">Пока нет добавленных книг.</string>
+    <string name="no_books_found_filters">Книги по вашим фильтрам не найдены.</string>
+    <string name="error_loading_books">Ошибка загрузки книг. Попробуйте позже.</string>
+    <string name="no_books_available">Нет доступных книг</string>
     <string name="no_rentable_books">Книг для аренды пока нет</string>
     <string name="book_image">Изображение книги</string>
     <string name="book_image_description">Изображение книги</string>
@@ -76,7 +80,6 @@
     <!-- Сообщения об ошибках/валидации -->
     <string name="nickname_exists">Этот никнейм уже занят</string>
     <string name="field_required">Это поле обязательно</string>
-
 
     <!-- Массивы для Спиннеров -->
     <string-array name="book_conditions">

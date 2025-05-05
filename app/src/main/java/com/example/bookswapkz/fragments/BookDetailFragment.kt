@@ -22,6 +22,7 @@ import com.bumptech.glide.Glide
 import com.example.bookswapkz.R
 import com.example.bookswapkz.databinding.FragmentBookDetailBinding
 import com.example.bookswapkz.models.Book
+import com.example.bookswapkz.models.BookType
 import com.example.bookswapkz.models.User
 import com.example.bookswapkz.viewmodels.BookViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -55,7 +56,7 @@ class BookDetailFragment : Fragment() {
         displayBookDetails(currentBook)
         setupButtonClickListeners(currentBook)
         observeViewModel()
-        
+
         // Настройка тулбара
         binding.toolbar.setNavigationOnClickListener {
             findNavController().popBackStack()
@@ -68,13 +69,13 @@ class BookDetailFragment : Fragment() {
         binding.conditionDetailTextView.text = book.condition
         binding.cityDetailTextView.text = book.city
         binding.ownerDetailTextView.text = book.ownerNickname ?: "Неизвестно"
-        
+
         binding.phoneDetailTextView.text = book.phone ?: "Не указан"
         binding.phoneDetailTextView.isVisible = !book.phone.isNullOrBlank()
-        
+
         // Отображение информации об аренде
-        binding.rentInfoContainer.isVisible = book.isForRent
-        if (book.isForRent) {
+        binding.rentInfoContainer.isVisible = book.bookType == BookType.RENT || book.bookType == BookType.BOTH
+        if (book.bookType == BookType.RENT || book.bookType == BookType.BOTH) {
             val rentInfo = if (book.rentPrice != null) {
                 "${book.rentPrice} ₸/${book.rentPeriod ?: "час"}"
             } else {
@@ -98,9 +99,9 @@ class BookDetailFragment : Fragment() {
         val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
         val isOwner = currentUserId == book.userId
         val canExchange = currentUserId != null && !isOwner && !book.isRented
-        
+
         binding.exchangeButton.isVisible = canExchange
-        
+
         // Настройка кнопок действий внизу
         binding.messageButton.isVisible = currentUserId != null && !isOwner
         binding.shareButton.isVisible = true
@@ -115,11 +116,11 @@ class BookDetailFragment : Fragment() {
                 }
             }
         }
-        
-        binding.exchangeButton.setOnClickListener { 
-            showExchangeConfirmationDialog(book) 
+
+        binding.exchangeButton.setOnClickListener {
+            showExchangeConfirmationDialog(book)
         }
-        
+
         // Новые кнопки в нижней части экрана
         binding.messageButton.setOnClickListener {
             val ownerId = book.userId
@@ -130,17 +131,17 @@ class BookDetailFragment : Fragment() {
                 Toast.makeText(requireContext(), "Невозможно начать чат", Toast.LENGTH_SHORT).show()
             }
         }
-        
+
         binding.shareButton.setOnClickListener {
             shareBook(book)
         }
-        
+
         // Кнопка меню в тулбаре
         binding.menuButton.setOnClickListener {
             showBookOptionsMenu(book)
         }
     }
-    
+
     private fun shareBook(book: Book) {
         val shareIntent = Intent(Intent.ACTION_SEND)
         shareIntent.type = "text/plain"
@@ -148,11 +149,11 @@ class BookDetailFragment : Fragment() {
         shareIntent.putExtra(Intent.EXTRA_TEXT, shareText)
         startActivity(Intent.createChooser(shareIntent, "Поделиться книгой"))
     }
-    
+
     private fun showBookOptionsMenu(book: Book) {
         val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
         val isOwner = currentUserId == book.userId
-        
+
         val options = ArrayList<String>()
         if (isOwner) {
             options.add("Редактировать")
@@ -160,7 +161,7 @@ class BookDetailFragment : Fragment() {
         } else {
             options.add("Пожаловаться")
         }
-        
+
         AlertDialog.Builder(requireContext())
             .setItems(options.toTypedArray()) { _, which ->
                 when {
@@ -193,7 +194,7 @@ class BookDetailFragment : Fragment() {
                             Log.e("BookDetailFragment", "Navigation failed", e)
                             Toast.makeText(context, "Ошибка перехода: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
                         }
-                    } else { 
+                    } else {
                         Toast.makeText(context, "Не удалось создать чат", Toast.LENGTH_SHORT).show()
                     }
                 }
@@ -204,7 +205,6 @@ class BookDetailFragment : Fragment() {
             }
         })
     }
-
 
     private fun observeViewModel() {
         // --- ИСПРАВЛЕНО: Обработка Result<Unit> ---
@@ -257,7 +257,7 @@ class BookDetailFragment : Fragment() {
             dialPhone(phoneNumber)
         }
     }
-    
+
     private fun dialPhone(phoneNumber: String) {
         val intent = Intent(Intent.ACTION_DIAL)
         intent.data = Uri.parse("tel:$phoneNumber")

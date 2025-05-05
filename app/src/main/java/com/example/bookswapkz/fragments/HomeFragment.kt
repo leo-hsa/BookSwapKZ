@@ -19,6 +19,7 @@ import com.example.bookswapkz.adapters.BookAdapter
 import com.example.bookswapkz.databinding.DialogFiltersBinding
 import com.example.bookswapkz.databinding.FragmentHomeBinding
 import com.example.bookswapkz.models.Book
+import com.example.bookswapkz.models.BookType
 import com.example.bookswapkz.utils.GridSpacingItemDecoration
 import com.example.bookswapkz.viewmodels.BookViewModel
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -36,6 +37,7 @@ class HomeFragment : Fragment() {
 
     private var selectedRentType: String = "Все книги"
     private var selectedPriceType: String = "Все цены"
+    private var selectedCondition: String? = null
     private var selectedCity: String? = null
     private var currentSearchQuery: String = ""
 
@@ -57,11 +59,11 @@ class HomeFragment : Fragment() {
         setupFilterButton()
         setupNavigation()
         observeViewModel()
-        
+
         // Показываем индикатор загрузки сразу
         binding.progressBar?.isVisible = true
     }
-    
+
     private fun setupNavigation() {
         // Настраиваем кнопку добавления книги
         binding.addBookFab?.setOnClickListener {
@@ -80,7 +82,6 @@ class HomeFragment : Fragment() {
 
     private fun handleBookClick(book: Book) {
         try {
-            // Убедитесь, что HomeFragmentDirections сгенерирован и действие существует
             val action = HomeFragmentDirections.actionHomeToBookDetail(book)
             findNavController().navigate(action)
         } catch (e: Exception) {
@@ -123,8 +124,9 @@ class HomeFragment : Fragment() {
             }
             .setNegativeButton(R.string.cancel, null)
             .setNeutralButton(R.string.reset) { _, _ ->
-                selectedRentType = "Все книги"
-                selectedPriceType = "Все цены"
+                selectedRentType = getString(R.string.all_books)
+                selectedPriceType = getString(R.string.all_prices)
+                selectedCondition = null
                 selectedCity = null
                 applyFilters()
             }
@@ -133,40 +135,62 @@ class HomeFragment : Fragment() {
 
     private fun setupFilterDropdowns(dialogBinding: DialogFiltersBinding) {
         // Book types
-        val rentTypes = arrayOf("Все книги", "Для аренды")
+        val rentTypes = arrayOf(
+            getString(R.string.all_books),
+            getString(R.string.for_rent),
+            getString(R.string.for_exchange)
+        )
         val rentAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, rentTypes)
         dialogBinding.rentTypeAutoComplete?.setAdapter(rentAdapter)
         dialogBinding.rentTypeAutoComplete?.setText(selectedRentType, false)
 
         // Price types
-        val priceTypes = arrayOf("Все цены", "Бесплатно", "Платно")
+        val priceTypes = arrayOf(
+            getString(R.string.all_prices),
+            getString(R.string.free),
+            getString(R.string.price_range_low),  // До 500 ₸
+            getString(R.string.price_range_medium),  // 500-1000 ₸
+            getString(R.string.price_range_high)  // Свыше 1000 ₸
+        )
         val priceAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, priceTypes)
         dialogBinding.priceTypeAutoComplete?.setAdapter(priceAdapter)
         dialogBinding.priceTypeAutoComplete?.setText(selectedPriceType, false)
 
+        // Conditions
+        val conditions = arrayOf(getString(R.string.all_conditions)) + resources.getStringArray(R.array.book_conditions)
+        val conditionAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, conditions)
+        dialogBinding.conditionAutoComplete?.setAdapter(conditionAdapter)
+        dialogBinding.conditionAutoComplete?.setText(selectedCondition ?: getString(R.string.all_conditions), false)
+
         // Cities
-        val cities = resources.getStringArray(R.array.cities)
+        val cities = arrayOf(getString(R.string.all_cities)) + resources.getStringArray(R.array.cities)
         val cityAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, cities)
         dialogBinding.cityAutoComplete?.setAdapter(cityAdapter)
-        dialogBinding.cityAutoComplete?.setText(selectedCity ?: "", false)
+        dialogBinding.cityAutoComplete?.setText(selectedCity ?: getString(R.string.all_cities), false)
 
         // Handle selections
         dialogBinding.rentTypeAutoComplete?.setOnItemClickListener { _, _, _, _ ->
-            selectedRentType = dialogBinding.rentTypeAutoComplete?.text?.toString() ?: "Все книги"
+            selectedRentType = dialogBinding.rentTypeAutoComplete?.text?.toString() ?: getString(R.string.all_books)
         }
 
         dialogBinding.priceTypeAutoComplete?.setOnItemClickListener { _, _, _, _ ->
-            selectedPriceType = dialogBinding.priceTypeAutoComplete?.text?.toString() ?: "Все цены"
+            selectedPriceType = dialogBinding.priceTypeAutoComplete?.text?.toString() ?: getString(R.string.all_prices)
+        }
+
+        dialogBinding.conditionAutoComplete?.setOnItemClickListener { _, _, _, _ ->
+            val selected = dialogBinding.conditionAutoComplete?.text?.toString()
+            selectedCondition = if (selected == getString(R.string.all_conditions)) null else selected
         }
 
         dialogBinding.cityAutoComplete?.setOnItemClickListener { _, _, _, _ ->
-            selectedCity = dialogBinding.cityAutoComplete?.text?.toString()
+            val selected = dialogBinding.cityAutoComplete?.text?.toString()
+            selectedCity = if (selected == getString(R.string.all_cities)) null else selected
         }
     }
 
     private fun applyFilters() {
         val sourceList = fullBookList.toList()
-        
+
         val filteredList = sourceList.filter { book ->
             // Search filter
             val searchQuery = currentSearchQuery.trim().lowercase()
@@ -179,21 +203,54 @@ class HomeFragment : Fragment() {
 
             // Book type filter
             val matchesRentType = when (selectedRentType) {
-                "Для аренды" -> book.isForRent
+                getString(R.string.for_rent) -> book.bookType == BookType.RENT || (book.bookType == BookType.BOTH && (book.rentPrice ?: 0.0) > 0)
+                getString(R.string.for_exchange) -> book.bookType == BookType.EXCHANGE || (book.bookType == BookType.BOTH && (book.rentPrice ?: 0.0) == 0.0)
                 else -> true
             }
 
             // Price type filter
             val matchesPriceType = when (selectedPriceType) {
-                "Бесплатно" -> !book.isForRent
-                "Платно" -> book.isForRent
+                getString(R.string.free) -> {
+                    if (book.bookType == BookType.RENT || book.bookType == BookType.BOTH) {
+                        (book.rentPrice ?: 0.0) == 0.0
+                    } else {
+                        true // Для EXCHANGE всегда бесплатно
+                    }
+                }
+                getString(R.string.price_range_low) -> {
+                    if (book.bookType == BookType.RENT || book.bookType == BookType.BOTH) {
+                        val price = book.rentPrice ?: 0.0
+                        price in 0.0..500.0
+                    } else {
+                        false // EXCHANGE не подпадает под ценовые диапазоны
+                    }
+                }
+                getString(R.string.price_range_medium) -> {
+                    if (book.bookType == BookType.RENT || book.bookType == BookType.BOTH) {
+                        val price = book.rentPrice ?: 0.0
+                        price in 500.0..1000.0
+                    } else {
+                        false
+                    }
+                }
+                getString(R.string.price_range_high) -> {
+                    if (book.bookType == BookType.RENT || book.bookType == BookType.BOTH) {
+                        val price = book.rentPrice ?: 0.0
+                        price > 1000.0
+                    } else {
+                        false
+                    }
+                }
                 else -> true
             }
+
+            // Condition filter
+            val matchesCondition = selectedCondition.isNullOrBlank() || book.condition == selectedCondition
 
             // City filter
             val matchesCity = selectedCity.isNullOrBlank() || book.city == selectedCity
 
-            matchesSearch && matchesRentType && matchesPriceType && matchesCity
+            matchesSearch && matchesRentType && matchesPriceType && matchesCondition && matchesCity
         }
 
         bookAdapter.submitList(filteredList)
@@ -203,11 +260,12 @@ class HomeFragment : Fragment() {
     private fun updateEmptyState(books: List<Book>) {
         binding.emptyListTextView?.isVisible = books.isEmpty()
         binding.recentBooksRecyclerView?.isVisible = books.isNotEmpty()
-        
+
         if (books.isEmpty()) {
-            binding.emptyListTextView?.text = if (currentSearchQuery.isNotBlank() || 
-                selectedRentType != "Все книги" || 
-                selectedPriceType != "Все цены" || 
+            binding.emptyListTextView?.text = if (currentSearchQuery.isNotBlank() ||
+                selectedRentType != getString(R.string.all_books) ||
+                selectedPriceType != getString(R.string.all_prices) ||
+                selectedCondition != null ||
                 selectedCity != null) {
                 getString(R.string.no_books_found_filters)
             } else {
@@ -240,7 +298,6 @@ class HomeFragment : Fragment() {
         }
     }
 
-
     private fun updateUiState(
         isLoading: Boolean,
         books: List<Book>? = null,
@@ -252,9 +309,8 @@ class HomeFragment : Fragment() {
         binding.progressBar?.isVisible = isLoading
 
         if (!isLoading) {
-            val isEmpty = books.isNullOrEmpty() // Результат (полный или отфильтрованный)
+            val isEmpty = books.isNullOrEmpty()
             if (isInitialLoad) {
-                // Состояние после первой загрузки
                 binding.recentBooksRecyclerView?.isVisible = !isEmpty || error != null
                 binding.emptyListTextView?.isVisible = isEmpty || error != null
                 binding.emptyListTextView?.text = when {
@@ -263,16 +319,13 @@ class HomeFragment : Fragment() {
                     else -> ""
                 }
             } else if (isFilteredResult) {
-                // Состояние после применения фильтра
                 binding.recentBooksRecyclerView?.isVisible = !isEmpty
                 binding.emptyListTextView?.isVisible = isEmpty && fullBookList.isNotEmpty()
-                if(isEmpty && fullBookList.isNotEmpty()) {
+                if (isEmpty && fullBookList.isNotEmpty()) {
                     binding.emptyListTextView?.text = getString(R.string.no_books_found_filters)
                 }
             }
-            // Если просто обновление списка без изменения фильтров, submitList обновит RecyclerView
         } else {
-            // Пока грузится
             binding.recentBooksRecyclerView?.isVisible = false
             binding.emptyListTextView?.isVisible = false
         }

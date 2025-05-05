@@ -90,6 +90,33 @@
 
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- Condition Filter -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Condition"
+            android:textColor="@android:color/darker_gray"
+            android:layout_marginBottom="8dp" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/conditionInputLayout"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp">
+
+            <AutoCompleteTextView
+                android:id="@+id/conditionAutoComplete"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:completionHint="Выберите состояние книги"
+                android:completionThreshold="1"
+                android:text="Все состояния"
+                android:dropDownHeight="wrap_content"
+                android:inputType="none" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
         <!-- City Filter -->
         <TextView
             android:layout_width="match_parent"
@@ -116,8 +143,6 @@
                 android:inputType="none" />
 
         </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- Action Buttons -->
 
     </LinearLayout>
 
