@@ -3,22 +3,25 @@ package com.example.bookswapkz.data
 import android.net.Uri
 import android.util.Log
 import com.example.bookswapkz.models.Book
-import com.example.bookswapkz.models.Chat    // Импорт Chat
+import com.example.bookswapkz.models.Chat
 import com.example.bookswapkz.models.Exchange
-import com.example.bookswapkz.models.Message  // Импорт Message
+import com.example.bookswapkz.models.Message
 import com.example.bookswapkz.models.User
 import com.example.bookswapkz.models.prepareForSave
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.Query
-import com.google.firebase.firestore.SetOptions // Импорт SetOptions
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.awaitClose // Импорт awaitClose
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.emptyFlow
@@ -43,10 +46,7 @@ class FirebaseRepository @Inject constructor() {
 
     private val TAG = "FirebaseRepository"
 
-    // --- Методы для работы с Пользователями ---
-
     suspend fun getUserById(userId: String): Result<User> = withContext(Dispatchers.IO) {
-        // --- НАЧАЛО ТЕЛА ФУНКЦИИ getUserById ---
         if (userId.isBlank()) {
             return@withContext Result.failure(IllegalArgumentException("User ID cannot be blank"))
         }
@@ -54,7 +54,7 @@ class FirebaseRepository @Inject constructor() {
             Log.d(TAG, "getUserById: Fetching user $userId")
             val document = usersCollection.document(userId).get().await()
             if (document.exists()) {
-                val user = document.toObject(User::class.java)?.copy(userId = document.id) // Используем ID документа
+                val user = document.toObject(User::class.java)?.copy(userId = document.id)
                 if (user != null) {
                     Log.d(TAG, "getUserById: User $userId fetched successfully")
                     Result.success(user)
@@ -70,26 +70,22 @@ class FirebaseRepository @Inject constructor() {
             Log.e(TAG, "getUserById: Error fetching user $userId", e)
             Result.failure(Exception("Error fetching user: ${e.localizedMessage}", e))
         }
-        // --- КОНЕЦ ТЕЛА ФУНКЦИИ getUserById ---
     }
 
     suspend fun getCurrentUser(): Result<User> = withContext(Dispatchers.IO) {
-        // --- НАЧАЛО ТЕЛА ФУНКЦИИ getCurrentUser ---
         val firebaseUser = auth.currentUser
         if (firebaseUser == null) {
             Log.d(TAG, "getCurrentUser: No authenticated user.")
             Result.failure(Exception("User not authenticated"))
         } else {
-            getUserById(firebaseUser.uid) // Вызываем предыдущую функцию
+            getUserById(firebaseUser.uid)
         }
-        // --- КОНЕЦ ТЕЛА ФУНКЦИИ getCurrentUser ---
     }
 
     suspend fun registerUser(
         nickname: String, name: String, city: String, street: String, houseNumber: String,
         age: Int, phone: String, email: String, password: String
     ): Result<FirebaseUser> = withContext(Dispatchers.IO) {
-        // --- НАЧАЛО ТЕЛА ФУНКЦИИ registerUser ---
         Log.d(TAG, "registerUser: Attempting registration for email: $email")
         try {
             val authResult = auth.createUserWithEmailAndPassword(email, password).await()
@@ -100,7 +96,6 @@ class FirebaseRepository @Inject constructor() {
                     "nickname" to nickname, "name" to name, "email" to email.lowercase(),
                     "age" to age, "city" to city, "street" to street,
                     "houseNumber" to houseNumber, "phone" to phone
-                    // userId сохранять не нужно
                 )
                 usersCollection.document(firebaseUser.uid).set(userMap).await()
                 Log.d(TAG, "registerUser: User data saved to Firestore for UID: ${firebaseUser.uid}")
@@ -111,18 +106,17 @@ class FirebaseRepository @Inject constructor() {
             }
         } catch (e: Exception) {
             Log.e(TAG, "registerUser: Error during registration for email $email", e)
-            val errorMessage = if (e is FirebaseAuthUserCollisionException) {
-                "Этот Email уже зарегистрирован."
-            } else {
-                "Ошибка регистрации: ${e.localizedMessage}"
+            val errorMessage = when (e) {
+                is FirebaseAuthUserCollisionException -> "Этот Email уже зарегистрирован."
+                is FirebaseAuthWeakPasswordException -> "Пароль слишком слабый. Используйте минимум 6 символов."
+                is FirebaseAuthInvalidCredentialsException -> "Некорректный формат email."
+                else -> "Ошибка регистрации: ${e.localizedMessage}"
             }
             Result.failure(Exception(errorMessage, e))
         }
-        // --- КОНЕЦ ТЕЛА ФУНКЦИИ registerUser ---
     }
 
     suspend fun loginUser(email: String, password: String): Result<FirebaseUser> = withContext(Dispatchers.IO) {
-        // --- НАЧАЛО ТЕЛА ФУНКЦИИ loginUser ---
         Log.d(TAG, "loginUser: Attempting login for email: $email")
         try {
             val authResult = auth.signInWithEmailAndPassword(email, password).await()
@@ -135,13 +129,16 @@ class FirebaseRepository @Inject constructor() {
             }
         } catch (e: Exception) {
             Log.w(TAG, "loginUser: signInWithEmail:failure", e)
-            Result.failure(Exception("Ошибка входа: Неверный email или пароль.", e))
+            val errorMessage = when (e) {
+                is FirebaseAuthInvalidUserException -> "Пользователь не найден."
+                is FirebaseAuthInvalidCredentialsException -> "Неверный email или пароль."
+                else -> "Ошибка входа: ${e.localizedMessage}"
+            }
+            Result.failure(Exception(errorMessage, e))
         }
-        // --- КОНЕЦ ТЕЛА ФУНКЦИИ loginUser ---
     }
 
     suspend fun updateUser(user: User): Result<Unit> = withContext(Dispatchers.IO) {
-        // --- НАЧАЛО ТЕЛА ФУНКЦИИ updateUser ---
         if (user.userId.isBlank()) {
             return@withContext Result.failure(IllegalArgumentException("User ID cannot be blank for update"))
         }
@@ -150,9 +147,8 @@ class FirebaseRepository @Inject constructor() {
             val userMap = mapOf(
                 "nickname" to user.nickname, "name" to user.name, "email" to user.email.lowercase(),
                 "age" to user.age, "city" to user.city, "street" to user.street,
-                "houseNumber" to user.houseNumber, "phone" to user.phone, "photoUrl" to user.photoUrl // Добавляем URL фото
+                "houseNumber" to user.houseNumber, "phone" to user.phone, "photoUrl" to user.photoUrl
             )
-            // Используем merge, чтобы не перезаписать поля, которых нет в Map (например, если email не меняем)
             usersCollection.document(user.userId).set(userMap, SetOptions.merge()).await()
             Log.i(TAG, "updateUser: User ${user.userId} updated successfully.")
             Result.success(Unit)
@@ -160,14 +156,9 @@ class FirebaseRepository @Inject constructor() {
             Log.e(TAG, "updateUser: Error updating user ${user.userId}", e)
             Result.failure(Exception("Ошибка обновления профиля: ${e.localizedMessage}", e))
         }
-        // --- КОНЕЦ ТЕЛА ФУНКЦИИ updateUser ---
     }
 
-
-    // --- Методы для работы с Книгами ---
-
     suspend fun addBook(book: Book, imageUri: Uri?): Result<String> = withContext(Dispatchers.IO) {
-        // --- НАЧАЛО ТЕЛА ФУНКЦИИ addBook ---
         val currentUser = auth.currentUser ?: return@withContext Result.failure(Exception("Пользователь не авторизован"))
         try {
             val newBookRef = booksCollection.document()
@@ -195,11 +186,9 @@ class FirebaseRepository @Inject constructor() {
             Log.e(TAG, "addBook: Error adding book", e)
             Result.failure(Exception("Не удалось добавить книгу: ${e.localizedMessage}", e))
         }
-        // --- КОНЕЦ ТЕЛА ФУНКЦИИ addBook ---
     }
 
     private suspend fun uploadBookImage(bookId: String, imageUri: Uri): Result<String> = withContext(Dispatchers.IO) {
-        // --- НАЧАЛО ТЕЛА ФУНКЦИИ uploadBookImage ---
         try {
             val imageFileName = "${bookId}_${System.currentTimeMillis()}.jpg"
             val imageRef = storageRef.child(imageFileName)
@@ -207,17 +196,14 @@ class FirebaseRepository @Inject constructor() {
             val downloadUrl = imageRef.downloadUrl.await()
             Result.success(downloadUrl.toString())
         } catch (e: Exception) { Result.failure(Exception("Ошибка загрузки/получения URL изображения: ${e.localizedMessage}", e)) }
-        // --- КОНЕЦ ТЕЛА ФУНКЦИИ uploadBookImage ---
     }
 
     suspend fun getAllBooks(): Result<List<Book>> = withContext(Dispatchers.IO) {
-        // --- НАЧАЛО ТЕЛА ФУНКЦИИ getAllBooks ---
         try {
             val querySnapshot = booksCollection.orderBy("timestamp", Query.Direction.DESCENDING).get().await()
             val books = querySnapshot.documents.mapNotNull { it.toObject(Book::class.java)?.copy(id = it.id) }
             Result.success(books)
         } catch (e: Exception) { Result.failure(Exception("Ошибка загрузки книг: ${e.localizedMessage}", e)) }
-        // --- КОНЕЦ ТЕЛА ФУНКЦИИ getAllBooks ---
     }
 
     suspend fun getUserBooks(userId: String): Result<List<Book>> = withContext(Dispatchers.IO) {
@@ -230,12 +216,12 @@ class FirebaseRepository @Inject constructor() {
             Log.d(TAG, "getUserBooks: Executing Firestore query for user: $userId")
             val query = booksCollection.whereEqualTo("userId", userId)
                 .orderBy("timestamp", Query.Direction.DESCENDING)
-            
+
             Log.d(TAG, "getUserBooks: Awaiting query results")
             val querySnapshot = query.get().await()
-            
+
             Log.d(TAG, "getUserBooks: Got ${querySnapshot.size()} documents")
-            val books = querySnapshot.documents.mapNotNull { doc -> 
+            val books = querySnapshot.documents.mapNotNull { doc ->
                 try {
                     doc.toObject(Book::class.java)?.copy(id = doc.id).also { book ->
                         Log.d(TAG, "getUserBooks: Mapped document ${doc.id} to book ${book?.title}")
@@ -247,24 +233,21 @@ class FirebaseRepository @Inject constructor() {
             }
             Log.d(TAG, "getUserBooks: Successfully mapped ${books.size} books")
             Result.success(books)
-        } catch (e: Exception) { 
+        } catch (e: Exception) {
             Log.e(TAG, "getUserBooks: Failed to fetch books", e)
-            Result.failure(Exception("Ошибка загрузки книг пользователя: ${e.localizedMessage}", e)) 
+            Result.failure(Exception("Ошибка загрузки книг пользователя: ${e.localizedMessage}", e))
         }
     }
 
     suspend fun updateBook(book: Book): Result<Unit> = withContext(Dispatchers.IO) {
-        // --- НАЧАЛО ТЕЛА ФУНКЦИИ updateBook ---
         if (book.id.isBlank()) return@withContext Result.failure(IllegalArgumentException("Book ID blank"))
         try {
             booksCollection.document(book.id).set(book.prepareForSave(), SetOptions.merge()).await()
             Result.success(Unit)
         } catch (e: Exception) { Result.failure(Exception("Ошибка обновления книги: ${e.localizedMessage}", e)) }
-        // --- КОНЕЦ ТЕЛА ФУНКЦИИ updateBook ---
     }
 
     suspend fun getBookById(bookId: String): Result<Book> = withContext(Dispatchers.IO) {
-        // --- НАЧАЛО ТЕЛА ФУНКЦИИ getBookById ---
         if (bookId.isBlank()) return@withContext Result.failure(IllegalArgumentException("Book ID blank"))
         try {
             val document = booksCollection.document(bookId).get().await()
@@ -273,14 +256,10 @@ class FirebaseRepository @Inject constructor() {
                     ?: Result.failure(Exception("Failed to parse book: $bookId"))
             } else { Result.failure(Exception("Book not found: $bookId")) }
         } catch (e: Exception) { Result.failure(Exception("Error fetching book $bookId: ${e.localizedMessage}", e)) }
-        // --- КОНЕЦ ТЕЛА ФУНКЦИИ getBookById ---
     }
 
-
-    // --- Методы для работы с Обменами ---
     suspend fun recordExchangeAndUpdateBook(book: Book, newOwner: User): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            // Implementation
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -289,7 +268,6 @@ class FirebaseRepository @Inject constructor() {
 
     suspend fun getUserGivenHistory(userId: String): Result<List<Exchange>> = withContext(Dispatchers.IO) {
         try {
-            // Implementation
             Result.success(emptyList())
         } catch (e: Exception) {
             Result.failure(e)
@@ -298,7 +276,6 @@ class FirebaseRepository @Inject constructor() {
 
     suspend fun getUserReceivedHistory(userId: String): Result<List<Exchange>> = withContext(Dispatchers.IO) {
         try {
-            // Implementation
             Result.success(emptyList())
         } catch (e: Exception) {
             Result.failure(e)
@@ -307,17 +284,14 @@ class FirebaseRepository @Inject constructor() {
 
     suspend fun getUserExchangeHistory(userId: String): Result<Pair<List<Exchange>, List<Exchange>>> = withContext(Dispatchers.IO) {
         try {
-            // Implementation
             Result.success(Pair(emptyList(), emptyList()))
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    // --- Методы для работы с Чатами ---
     suspend fun getOrCreateChat(user1Id: String, user2Id: String): Result<String> = withContext(Dispatchers.IO) {
         try {
-            // Implementation
             Result.success("")
         } catch (e: Exception) {
             Result.failure(e)
@@ -342,5 +316,4 @@ class FirebaseRepository @Inject constructor() {
             Result.failure(e)
         }
     }
-
-} // <-- Последняя скобка класса
+}

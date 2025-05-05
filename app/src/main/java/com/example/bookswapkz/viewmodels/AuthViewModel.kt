@@ -8,7 +8,6 @@ import com.example.bookswapkz.data.FirebaseRepository
 import com.google.firebase.auth.FirebaseUser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
-import kotlin.Result
 import javax.inject.Inject
 
 @HiltViewModel
@@ -22,12 +21,17 @@ class AuthViewModel @Inject constructor(
     private val _registrationResult = MutableLiveData<Result<FirebaseUser>>()
     val registrationResult: LiveData<Result<FirebaseUser>> = _registrationResult
 
-    fun loginUser(email: String, password: String): LiveData<Result<FirebaseUser>> {
-        val result = MutableLiveData<Result<FirebaseUser>>()
+    private val _loginResult = MutableLiveData<Result<FirebaseUser>>()
+    val loginResult: LiveData<Result<FirebaseUser>> = _loginResult
+
+    fun loginUser(email: String, password: String) {
         viewModelScope.launch {
-            result.value = repository.loginUser(email, password)
+            val result = repository.loginUser(email, password)
+            _loginResult.value = result
+            if (result.isFailure) {
+                _errorMessage.value = result.exceptionOrNull()?.message ?: "Login failed"
+            }
         }
-        return result
     }
 
     fun registerUser(
@@ -40,10 +44,9 @@ class AuthViewModel @Inject constructor(
         houseNumber: String,
         age: Int,
         phone: String
-    ): LiveData<Result<FirebaseUser>> {
-        val result = MutableLiveData<Result<FirebaseUser>>()
+    ) {
         viewModelScope.launch {
-            result.value = repository.registerUser(
+            val result = repository.registerUser(
                 nickname = nickname,
                 name = name,
                 city = city,
@@ -54,8 +57,11 @@ class AuthViewModel @Inject constructor(
                 email = email,
                 password = password
             )
+            _registrationResult.value = result
+            if (result.isFailure) {
+                _errorMessage.value = result.exceptionOrNull()?.message ?: "Registration failed"
+            }
         }
-        return result
     }
 
     fun clearErrorMessage() {
@@ -65,4 +71,8 @@ class AuthViewModel @Inject constructor(
     fun clearRegistrationResult() {
         _registrationResult.value = null
     }
-} 
+
+    fun clearLoginResult() {
+        _loginResult.value = null
+    }
+}
