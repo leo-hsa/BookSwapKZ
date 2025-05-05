@@ -1,66 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
-    tools:context=".fragments.AddBookFragment">
+    android:background="@android:color/white">
 
-    <EditText
-        android:id="@+id/titleEditText"
-        android:layout_width="0dp"
+    <!-- AppBar с Toolbar -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="108dp"
-        android:hint="@string/title_hint"
-        android:inputType="textCapSentences"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:background="@color/purple">
 
-    <EditText
-        android:id="@+id/authorEditText"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:hint="@string/author_hint"
-        android:inputType="textPersonName|textCapWords"
-        app:layout_constraintTop_toBottomOf="@id/titleEditText"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="8dp" />
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:navigationIcon="@drawable/ic_back"
+            app:navigationIconTint="@android:color/white">
 
-    <Spinner
-        android:id="@+id/conditionSpinner"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:minHeight="48dp"
-        app:layout_constraintTop_toBottomOf="@id/authorEditText"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="8dp" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Добавить книгу"
+                android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
+                android:textStyle="bold"
+                android:textColor="@android:color/white" />
 
-    <Spinner
-        android:id="@+id/citySpinner"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:minHeight="48dp"
-        app:layout_constraintTop_toBottomOf="@id/conditionSpinner"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="8dp" />
+        </com.google.android.material.appbar.MaterialToolbar>
 
-    <!-- Rental Section -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/rentalCardView"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        app:cardCornerRadius="8dp"
-        app:cardElevation="2dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/citySpinner">
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- Основное содержимое -->
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -68,85 +45,224 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <com.google.android.material.switchmaterial.SwitchMaterial
-                android:id="@+id/rentSwitch"
+            <!-- Выбор изображения книги -->
+            <FrameLayout
+                android:id="@+id/imagePickerFrame"
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:layout_marginBottom="24dp"
+                android:background="@color/very_light_gray">
+
+                <ImageView
+                    android:id="@+id/bookImagePreview"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop" />
+
+                <ImageView
+                    android:id="@+id/addPhotoIcon"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_camera"
+                    app:tint="@android:color/darker_gray" />
+
+            </FrameLayout>
+
+            <!-- Название книги -->
+            <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/rent_switch"
+                android:text="Название книги"
+                android:textColor="@android:color/black"
                 android:textSize="16sp" />
 
+            <EditText
+                android:id="@+id/titleEditText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/edit_text_background"
+                android:hint="Введите название"
+                android:inputType="text"
+                android:padding="12dp"
+                android:textColorHint="@android:color/darker_gray" />
+
+            <!-- Автор -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Автор"
+                android:textColor="@android:color/black"
+                android:textSize="16sp" />
+
+            <EditText
+                android:id="@+id/authorEditText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/edit_text_background"
+                android:hint="Введите автора"
+                android:inputType="text"
+                android:padding="12dp"
+                android:textColorHint="@android:color/darker_gray" />
+
+            <!-- Состояние -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Состояние"
+                android:textColor="@android:color/black"
+                android:textSize="16sp" />
+
+            <Spinner
+                android:id="@+id/conditionSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/edit_text_background"
+                android:padding="12dp" />
+
+            <!-- Город -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Город"
+                android:textColor="@android:color/black"
+                android:textSize="16sp" />
+
+            <Spinner
+                android:id="@+id/citySpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="24dp"
+                android:background="@drawable/edit_text_background"
+                android:padding="12dp" />
+
+            <!-- Тип предложения -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Тип предложения"
+                android:textColor="@android:color/black"
+                android:textSize="16sp"
+                android:layout_marginBottom="8dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/exchangeTypeButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Обмен"
+                    android:textColor="@android:color/white"
+                    app:backgroundTint="@color/teal"
+                    app:cornerRadius="4dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/rentTypeButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="16dp"
+                    android:text="Аренда"
+                    android:textColor="@android:color/black"
+                    app:backgroundTint="@android:color/white"
+                    app:cornerRadius="4dp"
+                    app:strokeColor="@android:color/darker_gray"
+                    app:strokeWidth="1dp" />
+
+            </LinearLayout>
+
+            <!-- Секция для аренды (изначально скрыта) -->
             <LinearLayout
                 android:id="@+id/rentOptionsLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:visibility="gone"
-                android:layout_marginTop="8dp">
+                android:visibility="gone">
 
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/rentPriceLayout"
+                <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/rent_price_hint"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                    android:text="Цена за час (тг)"
+                    android:textColor="@android:color/black"
+                    android:textSize="16sp" />
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/rentPriceEditText"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="numberDecimal" />
-
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/rentDurationLayout"
+                <EditText
+                    android:id="@+id/rentPriceEditText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/rent_duration_hint"
                     android:layout_marginTop="8dp"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/edit_text_background"
+                    android:hint="Введите цену"
+                    android:inputType="numberDecimal"
+                    android:padding="12dp"
+                    android:textColorHint="@android:color/darker_gray" />
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/rentDurationEditText"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="number" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Количество часов"
+                    android:textColor="@android:color/black"
+                    android:textSize="16sp" />
 
-                </com.google.android.material.textfield.TextInputLayout>
+                <EditText
+                    android:id="@+id/rentHoursEditText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/edit_text_background"
+                    android:hint="Введите количество часов"
+                    android:inputType="number"
+                    android:padding="12dp"
+                    android:textColorHint="@android:color/darker_gray" />
 
                 <TextView
                     android:id="@+id/totalPriceTextView"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="16dp"
                     android:text="Итого: 0 ₸"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
+                    android:textColor="@android:color/black"
+                    android:textStyle="bold"
+                    android:textSize="16sp" />
 
             </LinearLayout>
 
+            <!-- Кнопка добавления книги -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/addBookButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:padding="12dp"
+                android:text="ДОБАВИТЬ КНИГУ"
+                android:textColor="@android:color/black"
+                app:backgroundTint="@color/peach"
+                app:cornerRadius="4dp" />
+
         </LinearLayout>
 
-    </com.google.android.material.card.MaterialCardView>
+    </androidx.core.widget.NestedScrollView>
 
-    <Button
-        android:id="@+id/addBookButton"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="@string/add_book_button"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/rentalCardView" />
-
+    <!-- ProgressBar -->
     <ProgressBar
         android:id="@+id/progressBar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:layout_gravity="center"
+        android:visibility="gone" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

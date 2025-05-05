@@ -52,10 +52,17 @@ dependencies {
     // implementation("androidx.navigation:navigation-ui-ktx:2.8.3")
 
 
-    // Firebase
-    implementation("com.google.firebase:firebase-auth-ktx:23.0.0")
-    // implementation("com.google.firebase:firebase-database-ktx:21.0.0") // Удалите, если используете Firestore
-    implementation("com.google.firebase:firebase-firestore-ktx:25.0.0") // Firestore
+    // Firebase Platform BOM
+    implementation(platform("com.google.firebase:firebase-bom:32.7.4"))
+    
+    // Firebase dependencies (don't specify versions when using BOM)
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.firebase:firebase-storage-ktx")
+    
+    // Google Play Services
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
+    
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
 
@@ -71,7 +78,6 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     // Multidex
     implementation("androidx.multidex:multidex:2.0.1")
-    implementation(libs.firebase.storage.ktx)
 
     // Dagger Hilt
     implementation("com.google.dagger:hilt-android:2.50")

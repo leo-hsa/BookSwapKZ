@@ -31,6 +31,21 @@
         <action
             android:id="@+id/action_myBooks_to_bookDetail"
             app:destination="@id/bookDetailFragment" />
+        <action
+            android:id="@+id/action_myBooks_to_login"
+            app:destination="@id/loginFragment"
+            app:popUpTo="@id/myBooksFragment"
+            app:popUpToInclusive="true" />
+        <!-- Добавляем недостающие действия навигации -->
+        <action
+            android:id="@+id/action_myBooks_to_home"
+            app:destination="@id/homeFragment" />
+        <action
+            android:id="@+id/action_myBooks_to_profile"
+            app:destination="@id/profileFragment" />
+        <action
+            android:id="@+id/action_myBooks_to_addBook"
+            app:destination="@id/addBookFragment" />
     </fragment>
 
     <fragment
@@ -114,8 +129,22 @@
         <argument
             android:name="book"
             app:argType="com.example.bookswapkz.models.Book" />
+        <!-- ЭТО ДЕЙСТВИЕ ДОЛЖНО БЫТЬ ЗДЕСЬ -->
         <action
             android:id="@+id/action_bookDetailFragment_to_chatFragment"
+            app:destination="@id/chatFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/chatsListFragment"
+        android:name="com.example.bookswapkz.fragments.ChatListFragment"
+        android:label="Chats"
+        tools:layout="@layout/fragment_chat_list">
+        <action
+            android:id="@+id/action_chatsList_to_chatDetail"
+            app:destination="@id/chatDetailFragment" />
+        <action
+            android:id="@+id/action_chatList_to_chatFragment"
             app:destination="@id/chatFragment" />
     </fragment>
 
@@ -130,6 +159,21 @@
         <argument
             android:name="userName"
             app:argType="string" />
+        <argument
+            android:name="chatId"
+            app:argType="string"
+            app:nullable="true"
+            android:defaultValue="@null" />
+        <argument
+            android:name="otherUserId"
+            app:argType="string"
+            app:nullable="true"
+            android:defaultValue="@null" />
+        <argument
+            android:name="otherUserName"
+            app:argType="string"
+            app:nullable="true"
+            android:defaultValue="@null" />
     </fragment>
 
     <fragment
@@ -137,16 +181,6 @@
         android:name="com.example.bookswapkz.fragments.EditProfileFragment"
         android:label="Edit Profile"
         tools:layout="@layout/fragment_edit_profile" />
-
-    <fragment
-        android:id="@+id/chatsListFragment"
-        android:name="com.example.bookswapkz.fragments.ChatListFragment"
-        android:label="Chats"
-        tools:layout="@layout/fragment_chats_list">
-        <action
-            android:id="@+id/action_chatsList_to_chatDetail"
-            app:destination="@id/chatDetailFragment" />
-    </fragment>
 
     <fragment
         android:id="@+id/chatDetailFragment"

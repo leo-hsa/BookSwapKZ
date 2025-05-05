@@ -15,25 +15,27 @@
 
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="180dp">
+            android:layout_height="160dp">
 
             <ImageView
-                android:id="@+id/bookCover"
+                android:id="@+id/bookImage"
                 android:layout_width="match_parent"
-                android:layout_height="196dp"
+                android:layout_height="match_parent"
                 android:scaleType="centerCrop"
-                tools:src="@drawable/placeholder_book" />
+                tools:src="@drawable/ic_book_placeholder" />
 
+            <!-- Owner Count Chip -->
             <com.google.android.material.chip.Chip
-                android:id="@+id/statusChip"
+                android:id="@+id/ownerCountTextView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="top|end"
                 android:layout_margin="8dp"
-                android:textSize="12sp"
-                app:chipBackgroundColor="@color/status_available"
-                app:chipMinHeight="24dp"
-                tools:text="Available" />
+                android:textAppearance="@style/TextAppearance.MaterialComponents.Chip"
+                android:textColor="?attr/colorOnSecondary"
+                app:chipBackgroundColor="?attr/colorSecondary"
+                tools:text="2" />
+
         </FrameLayout>
 
         <LinearLayout
@@ -43,27 +45,48 @@
             android:padding="12dp">
 
             <TextView
-                android:id="@+id/bookTitle"
+                android:id="@+id/titleTextView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
-                android:maxLines="2"
-                android:textColor="@color/text_primary"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                tools:text="The Great Gatsby" />
+                android:maxLines="1"
+                android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                tools:text="Мастер и Маргарита" />
 
             <TextView
-                android:id="@+id/bookAuthor"
+                android:id="@+id/authorTextView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:textColor="@color/text_secondary"
-                android:textSize="12sp"
-                tools:text="F. Scott Fitzgerald" />
+                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                android:textColor="?android:attr/textColorSecondary"
+                tools:text="Михаил Булгаков" />
 
+            <!-- Condition -->
+            <TextView
+                android:id="@+id/conditionTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                android:textColor="?android:attr/textColorSecondary"
+                tools:text="Отличное" />
+
+            <!-- Owner Nickname -->
+            <TextView
+                android:id="@+id/ownerNicknameTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                android:textColor="?android:attr/textColorSecondary"
+                android:visibility="gone"
+                tools:text="@string/nickname"
+                tools:visibility="visible" />
+
+            <!-- Location Section -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -72,40 +95,24 @@
                 android:orientation="horizontal">
 
                 <ImageView
-                    android:id="@+id/ownerAvatar"
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:background="@drawable/circle_background"
-                    android:padding="2dp"
-                    tools:src="@drawable/placeholder_avatar" />
-
-                <TextView
-                    android:id="@+id/ownerName"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="4dp"
-                    android:layout_weight="1"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp"
-                    tools:text="John Doe" />
-
-                <ImageView
-                    android:layout_width="14dp"
-                    android:layout_height="14dp"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
                     android:src="@drawable/ic_location"
-                    app:tint="@color/text_secondary" />
+                    app:tint="?android:attr/textColorSecondary" />
 
                 <TextView
-                    android:id="@+id/distance"
+                    android:id="@+id/cityTextView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="2dp"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp"
-                    tools:text="2.5km" />
+                    android:layout_marginStart="4dp"
+                    android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                    android:textColor="?android:attr/textColorSecondary"
+                    tools:text="Алматы" />
+
             </LinearLayout>
+
         </LinearLayout>
+
     </LinearLayout>
+
 </com.google.android.material.card.MaterialCardView>

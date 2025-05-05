@@ -6,59 +6,92 @@
     android:layout_height="match_parent"
     android:background="@android:color/white">
 
+    <!-- AppBarLayout с Toolbar -->
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="?attr/colorSurface"
-        app:elevation="4dp">
+        android:background="@color/purple">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            app:layout_scrollFlags="scroll|enterAlways|snap"
-            app:title=" "> <!-- Убираем заголовок по умолчанию -->
+            app:titleTextColor="@android:color/white">
 
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
-
-                <!-- Заголовок приложения -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_centerVertical="true"
-                    android:layout_alignParentStart="true"
-                    android:text="@string/app_name"
-                    android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
-                    android:textColor="?attr/colorPrimary"
-                    android:textStyle="bold" />
-
-                <!-- Кнопка сообщений (если нужна) -->
-                <ImageButton
-                    android:id="@+id/messagesButton"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Messages"
-                    android:src="@drawable/ic_message"
-                    app:tint="?attr/colorOnSurfaceVariant" />
-
-            </RelativeLayout>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Book Swap KZ"
+                android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
+                android:textStyle="bold"
+                android:textColor="@android:color/white"/>
 
         </com.google.android.material.appbar.MaterialToolbar>
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <!-- Используем NestedScrollView для прокрутки всего контента под AppBarLayout -->
+    <!-- Search Bar -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/searchCardView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="2dp"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="8dp"
+            android:background="@color/very_light_gray">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginStart="8dp"
+                android:src="@drawable/ic_search"
+                app:tint="@android:color/darker_gray"/>
+
+            <EditText
+                android:id="@+id/searchEditText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:background="@null"
+                android:hint="Поиск по названию, автору, городу"
+                android:inputType="text"
+                android:padding="8dp"
+                android:textSize="16sp"
+                android:textColorHint="@android:color/darker_gray"
+                android:maxLines="1"
+                android:imeOptions="actionSearch"/>
+
+            <ImageView
+                android:id="@+id/filterButton"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginEnd="8dp"
+                android:src="@drawable/ic_filter"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true" />
+
+        </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
+
+    <!-- Главный контент -->
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
         android:fillViewport="true"
+        android:paddingTop="64dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
@@ -66,43 +99,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="16dp">
-
-            <!-- Поисковая строка -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/searchInputLayout"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="@string/search_hint"
-                app:startIconDrawable="@drawable/ic_search"
-                app:endIconMode="clear_text"
-                app:boxCornerRadiusTopStart="28dp"
-                app:boxCornerRadiusTopEnd="28dp"
-                app:boxCornerRadiusBottomStart="28dp"
-                app:boxCornerRadiusBottomEnd="28dp"
-                android:layout_marginBottom="16dp">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/searchEditText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:imeOptions="actionSearch"
-                    android:inputType="text"
-                    android:maxLines="1" />
-
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <!-- Кнопка фильтра -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/filterButton"
-                style="@style/Widget.MaterialComponents.Button.TextButton.Icon"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="end"
-                android:text="Фильтры"
-                app:icon="@drawable/ic_filter"
-                android:layout_marginBottom="16dp"/>
-
 
             <!-- Заголовок секции книг -->
             <TextView
@@ -112,13 +108,14 @@
                 android:layout_marginBottom="8dp"
                 android:text="Книги для обмена"
                 android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6"
-                android:textColor="?attr/colorOnSurface" />
+                android:textColor="@android:color/black"
+                android:textStyle="bold" />
 
             <!-- Контейнер для RecyclerView и состояний -->
             <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minHeight="200dp"> <!-- Минимальная высота, чтобы было видно ProgressBar/TextView -->
+                android:minHeight="200dp">
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/recentBooksRecyclerView"
@@ -126,9 +123,8 @@
                     android:layout_height="match_parent"
                     android:clipToPadding="false"
                     android:paddingBottom="80dp"
-                    android:visibility="gone"
-                    tools:listitem="@layout/item_book"
-                    tools:visibility="visible"/>
+                    android:visibility="visible"
+                    tools:listitem="@layout/item_book" />
 
                 <TextView
                     android:id="@+id/emptyListTextView"
@@ -140,30 +136,30 @@
                     android:text="@string/no_books_added_yet"
                     android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
                     android:textColor="?android:attr/textColorSecondary"
-                    android:visibility="gone"
-                    tools:visibility="gone"/>
+                    android:visibility="gone" />
 
                 <ProgressBar
                     android:id="@+id/progressBar"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:visibility="gone"
-                    tools:visibility="visible"/>
+                    android:visibility="gone" />
 
             </FrameLayout>
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- Используем ExtendedFloatingActionButton -->
-    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+    <!-- Используем FAB для добавления книги -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/addBookFab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
-        android:text="@string/add_book"
-        app:icon="@drawable/ic_add" />
+        android:src="@drawable/ic_add"
+        android:contentDescription="@string/add_book"
+        app:backgroundTint="@color/teal"
+        app:tint="@android:color/white" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

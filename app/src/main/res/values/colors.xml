@@ -1,27 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#FF6200EE</color>
-    <color name="primary_dark">#FF3700B3</color>
-    <color name="secondary">#FF03DAC5</color>
-    <color name="secondary_dark">#FF018786</color>
-    <color name="accent">#FF4081</color>
-    <color name="background">#FFFFFFFF</color>
-    <color name="surface">#FFFFFFFF</color>
-    <color name="text_primary">#DE000000</color>
-    <color name="text_secondary">#99000000</color>
-    <color name="card_background">#F5F5F5</color>
-    <color name="rating_color">#FFC107</color>
-    <color name="button_background">#EDD6C8</color>
-    <color name="white">#FFFFFFFF</color>
     <color name="black">#FF000000</color>
-    <color name="chip_selected">#E0E0E0</color>
-    <color name="divider">#EEEEEE</color>
-    <color name="status_available">#4CAF50</color>
-    <color name="status_borrowed">#FF9800</color>
-    <color name="status_rental">#FF9800</color>
-    <color name="status_exchange">#4CAF50</color>
+    <color name="white">#FFFFFFFF</color>
+    
+    <!-- Основные цвета приложения -->
+    <color name="purple">#9C27B0</color>
+    <color name="purple_light">#CF5CE2</color>
+    <color name="purple_dark">#7B1FA2</color>
+    
+    <color name="teal">#009688</color>
+    <color name="teal_light">#4DB6AC</color>
+    <color name="teal_dark">#00796B</color>
+    
+    <color name="peach">#FFCCBC</color>
+    <color name="very_light_gray">#F5F5F5</color>
+    
+    <!-- Наследуемые цвета для совместимости -->
+    <color name="primary">@color/purple</color>
+    <color name="primary_dark">@color/purple_dark</color>
+    <color name="primary_light">@color/purple_light</color>
+    <color name="secondary">@color/teal</color>
+    <color name="secondary_dark">@color/teal_dark</color>
+    <color name="accent">@color/teal</color>
+    
+    <color name="background">@color/white</color>
+    <color name="text_primary">@color/black</color>
+    <color name="text_secondary">#757575</color>
+    
+    <!-- Отсутствующие цвета, которые вызывают ошибку сборки -->
+    <color name="button_background">@color/teal</color>
+    <color name="card_background">@color/white</color>
     <color name="book_cover_placeholder">#E0E0E0</color>
-    <color name="avatar_background">#F5E6DE</color>
-    <color name="price_color">#FF5722</color>
-    <color name="colorPrimaryDark">#D4B8A8</color>
+    <color name="surface">@color/white</color>
+    <color name="colorPrimaryDark">@color/purple_dark</color>
 </resources>

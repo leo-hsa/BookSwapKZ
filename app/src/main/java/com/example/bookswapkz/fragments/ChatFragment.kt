@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -12,11 +13,10 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.example.bookswapkz.adapters.MessagesAdapter
 import com.example.bookswapkz.databinding.FragmentChatDetailBinding
-import com.example.bookswapkz.models.Chat
 import com.example.bookswapkz.viewmodels.ChatViewModel
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
@@ -29,6 +29,10 @@ class ChatFragment : Fragment() {
     private val viewModel: ChatViewModel by viewModels()
     private val args: ChatFragmentArgs by navArgs()
     private val messagesAdapter = MessagesAdapter()
+    
+    // Current user ID from Firebase Auth
+    private val currentUserId: String
+        get() = FirebaseAuth.getInstance().currentUser?.uid ?: ""
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -49,10 +53,8 @@ class ChatFragment : Fragment() {
 
     private fun setupRecyclerView() {
         binding.messagesRecyclerView.apply {
+            layoutManager = LinearLayoutManager(context)
             adapter = messagesAdapter
-            layoutManager = LinearLayoutManager(requireContext()).apply {
-                stackFromEnd = true
-            }
         }
     }
 
@@ -60,7 +62,8 @@ class ChatFragment : Fragment() {
         binding.sendButton.setOnClickListener {
             val messageText = binding.messageEditText.text?.toString()?.trim() ?: ""
             if (messageText.isNotEmpty()) {
-                viewModel.sendMessage(args.chatId, messageText)
+                // Use currentUserId from Firebase Auth instead of args.userId
+                viewModel.sendMessage(messageText, currentUserId)
                 binding.messageEditText.text?.clear()
             }
         }
@@ -69,7 +72,7 @@ class ChatFragment : Fragment() {
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.currentChatMessages.collect { messages ->
+                viewModel.messages.collect { messages ->
                     messagesAdapter.submitList(messages)
                     if (messages.isNotEmpty()) {
                         binding.messagesRecyclerView.smoothScrollToPosition(messages.size - 1)
@@ -90,7 +93,12 @@ class ChatFragment : Fragment() {
     }
 
     private fun loadMessages() {
-        viewModel.loadMessages(args.chatId)
+        try {
+            // This assumes args.chatId will be available
+            viewModel.loadMessages(args.chatId)
+        } catch (e: Exception) {
+            Toast.makeText(context, "Error loading chat: Invalid chat ID", Toast.LENGTH_SHORT).show()
+        }
     }
 
     override fun onDestroyView() {

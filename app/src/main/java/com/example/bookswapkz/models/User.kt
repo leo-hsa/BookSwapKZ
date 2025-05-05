@@ -6,7 +6,7 @@ import kotlinx.parcelize.Parcelize
 
 @Parcelize
 data class User(
-    @DocumentId var id: String = "", // Changed from userId to id and val to var
+    @DocumentId val userId: String = "",
     val nickname: String = "",
     val name: String = "",
     val email: String = "",
@@ -14,10 +14,8 @@ data class User(
     val city: String = "",
     val street: String = "",
     val houseNumber: String = "",
-    val phone: String = "",
-    val photoUrl: String = ""
-    // Добавьте другие поля, если нужно (например, profileImageUrl: String? = null)
+    val phone: String = "", // Оставим String, но можно String?
+    val photoUrl: String? = null // Nullable
 ) : Parcelable {
-    // Пустой конструктор для Firestore
-    constructor() : this("", "", "", "", 0, "", "", "", "", "")
+    constructor() : this(userId = "", nickname = "", name = "", email = "", age = 0, city = "", street = "", houseNumber = "", phone = "", photoUrl = null)
 }

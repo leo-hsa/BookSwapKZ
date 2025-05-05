@@ -1,30 +1,34 @@
 package com.example.bookswapkz.viewmodels
 
-import android.app.Application // <-- Импорт для Application Context
+import android.app.Application
 import android.net.Uri
 import android.util.Log
-// import android.widget.Toast // <-- Импорт Toast УДАЛЕН
-import androidx.lifecycle.AndroidViewModel // <-- Наследуем от AndroidViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-// import androidx.lifecycle.ViewModel // Заменяем на AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bookswapkz.data.FirebaseRepository
 import com.example.bookswapkz.models.Book
+import com.example.bookswapkz.models.Chat
 import com.example.bookswapkz.models.Exchange
+import com.example.bookswapkz.models.Message
 import com.example.bookswapkz.models.User
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.Result
 
 @HiltViewModel
 class BookViewModel @Inject constructor(
     private val repository: FirebaseRepository,
-    application: Application // Внедряем Application для AndroidViewModel
-) : AndroidViewModel(application) { // Наследуем AndroidViewModel
+    application: Application
+) : AndroidViewModel(application) {
 
-    // ... (остальные LiveData без изменений) ...
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+
     private val _user = MutableLiveData<User?>()
     val user: LiveData<User?> get() = _user
     private val _allBooks = MutableLiveData<List<Book>>()
@@ -35,260 +39,333 @@ class BookViewModel @Inject constructor(
     val errorMessage: LiveData<String?> get() = _errorMessage
     private val _exchangeResult = MutableLiveData<Result<Unit>?>()
     val exchangeResult: LiveData<Result<Unit>?> get() = _exchangeResult
-    private val _isLoading = MutableLiveData<Boolean>()
+    private val _isLoading = MutableLiveData<Boolean>(false) // Начальное значение false
     val isLoading: LiveData<Boolean> get() = _isLoading
     private val _givenExchanges = MutableLiveData<List<Exchange>>()
     val givenExchanges: LiveData<List<Exchange>> get() = _givenExchanges
     private val _receivedExchanges = MutableLiveData<List<Exchange>>()
     val receivedExchanges: LiveData<List<Exchange>> get() = _receivedExchanges
+    private val _chatList = MutableLiveData<List<Chat>>()
+    val chatList: LiveData<List<Chat>> get() = _chatList
+
 
     init {
-        Log.d("BookViewModel", "ViewModel Initialized")
-        loadInitialData()
-    }
-
-    private fun loadInitialData() {
-        viewModelScope.launch {
-            _isLoading.postValue(true)
-            val userResult = repository.getCurrentUser()
-            userResult.onSuccess { currentUser ->
-                _user.postValue(currentUser)
-                Log.d("BookViewModel", "Initial user loaded: ${currentUser.nickname}")
-                fetchUserBooksInternal(currentUser.id)
-                loadUserExchangeHistory(currentUser.id)
-            }.onFailure {
-                _user.postValue(null)
-                _myBooks.postValue(emptyList())
-                _givenExchanges.postValue(emptyList())
-                _receivedExchanges.postValue(emptyList())
-                Log.w("BookViewModel", "Initial user load failed or user not logged in.")
-            }
-            fetchAllBooksInternal()
-            _isLoading.postValue(false)
+        val currentUser = auth.currentUser
+        Log.d("BookViewModel", "ViewModel Initialized. Current auth state: user=${currentUser?.uid}, isLoggedIn=${currentUser != null}")
+        observeAuthState()
+        
+        // Force load if user is already logged in
+        if (currentUser != null && _user.value == null) {
+            Log.d("BookViewModel", "User logged in but data not loaded, forcing initial load")
+            loadCurrentUserAndData(currentUser.uid)
         }
     }
 
-    private fun fetchAllBooksInternal() {
-        viewModelScope.launch {
-            _isLoading.postValue(true)
-            repository.getAllBooks().onSuccess { books ->
-                _allBooks.postValue(books)
-                Log.d("BookViewModel", "All books updated: ${books.size} books")
-            }.onFailure { error ->
-                Log.e("BookViewModel", "Error fetching all books", error)
-                _errorMessage.postValue("Failed to load books: ${error.message}")
-            }
-            _isLoading.postValue(false)
-        }
-    }
-    
-    private fun fetchUserBooksInternal(userId: String) {
-        viewModelScope.launch {
-            _isLoading.postValue(true)
-            repository.getBooksByOwnerId(userId).onSuccess { books ->
-                _myBooks.postValue(books)
-                Log.d("BookViewModel", "User books updated: ${books.size} books for user $userId")
-            }.onFailure { error ->
-                Log.e("BookViewModel", "Error fetching user books", error)
-                _errorMessage.postValue("Failed to load your books: ${error.message}")
-            }
-            _isLoading.postValue(false)
-        }
-    }
-    
-    fun addBook(book: Book, imageUri: Uri?): LiveData<Result<String>> {
-        val result = MutableLiveData<Result<String>>()
-        viewModelScope.launch {
-            _isLoading.postValue(true)
+    private fun observeAuthState() {
+        Log.d("BookViewModel", "Setting up auth state listener")
+        auth.addAuthStateListener { firebaseAuth ->
+            val firebaseUser = firebaseAuth.currentUser
+            Log.d("BookViewModel", "Auth state changed - User: ${firebaseUser?.uid}")
             
-            try {
-                // First upload the image if provided
-                val imageUrlResult = if (imageUri != null) {
-                    repository.uploadBookImage(imageUri)
-                } else {
-                    Result.success("")
-                }
+            if (firebaseUser != null) {
+                val currentUserId = _user.value?.userId
+                Log.d("BookViewModel", "Comparing current user ${currentUserId} with Firebase user ${firebaseUser.uid}")
                 
-                imageUrlResult.onSuccess { imageUrl ->
-                    // Create a copy of the book with the image URL
-                    val bookWithImage = if (imageUrl.isNotEmpty()) {
-                        book.copy(imageUrl = imageUrl)
-                    } else {
-                        book
-                    }
+                if (_user.value?.userId != firebaseUser.uid) {
+                    Log.d("BookViewModel", "User changed or not loaded, loading data...")
+                    loadCurrentUserAndData(firebaseUser.uid)
+                } else {
+                    Log.d("BookViewModel", "User already loaded, skipping reload")
+                }
+            } else {
+                Log.d("BookViewModel", "No user logged in, clearing data")
+                clearUserData()
+            }
+        }
+
+        // Also load data on start if user is already logged in
+        val currentUser = auth.currentUser
+        Log.d("BookViewModel", "Initial auth check - Current user: ${currentUser?.uid}")
+        
+        if (currentUser != null) {
+            Log.d("BookViewModel", "User already logged in, loading initial data")
+            loadCurrentUserAndData(currentUser.uid)
+        } else {
+            Log.d("BookViewModel", "No user logged in initially, clearing data")
+            clearUserData()
+            _isLoading.value = false
+        }
+    }
+
+    // Очистка данных при выходе пользователя
+    private fun clearUserData() {
+        _user.postValue(null)
+        _allBooks.postValue(emptyList()) // Возможно, все книги все равно надо показывать? Зависит от логики.
+        _myBooks.postValue(emptyList())
+        _givenExchanges.postValue(emptyList())
+        _receivedExchanges.postValue(emptyList())
+        _chatList.postValue(emptyList())
+        _errorMessage.postValue(null)
+        Log.d("BookViewModel", "User data cleared.")
+    }
+
+    // Загрузка данных для ВОШЕДШЕГО пользователя
+    private fun loadCurrentUserAndData(userId: String) {
+        Log.d("BookViewModel", "Starting to load data for user: $userId")
+        viewModelScope.launch {
+            try {
+                _isLoading.postValue(true)
+                Log.d("BookViewModel", "Getting user data from repository")
+                val userResult = repository.getUserById(userId)
+                
+                userResult.onSuccess { currentUser ->
+                    Log.d("BookViewModel", "Successfully loaded user: ${currentUser.nickname}")
+                    _user.postValue(currentUser)
                     
-                    // Add the book to the database
-                    repository.addBook(bookWithImage).onSuccess { bookId ->
-                        result.postValue(Result.success(bookId))
-                        // Refresh the book lists
-                        fetchAllBooksInternal()
-                        _user.value?.id?.let { fetchUserBooksInternal(it) }
-                    }.onFailure { error ->
-                        result.postValue(Result.failure(error))
+                    launch {
+                        Log.d("BookViewModel", "Starting to fetch user books")
+                        fetchUserBooksInternal(currentUser.userId)
                     }
+                    launch { loadUserExchangeHistory(currentUser.userId) }
+                    launch { loadUserChats() }
+                    launch { fetchAllBooksInternal() }
                 }.onFailure { error ->
-                    result.postValue(Result.failure(error))
+                    Log.e("BookViewModel", "Failed to load user data", error)
+                    _errorMessage.postValue("Ошибка загрузки профиля: ${error.localizedMessage}")
+                    clearUserData()
                 }
             } catch (e: Exception) {
-                result.postValue(Result.failure(e))
+                Log.e("BookViewModel", "Unexpected error in loadCurrentUserAndData", e)
+                _errorMessage.postValue("Unexpected error: ${e.localizedMessage}")
             } finally {
                 _isLoading.postValue(false)
             }
         }
-        return result
     }
-    
-    fun loadUserExchangeHistory(userId: String) {
-        viewModelScope.launch {
-            _isLoading.postValue(true)
-            repository.getExchangesByUserId(userId).onSuccess { exchanges ->
-                val given = exchanges.filter { it.oldOwnerId == userId }
-                val received = exchanges.filter { it.newOwnerId == userId }
-                _givenExchanges.postValue(given)
-                _receivedExchanges.postValue(received)
-                Log.d("BookViewModel", "Exchanges loaded: ${given.size} given, ${received.size} received")
+
+    // Остальные методы теперь используют поля из ViewModel
+    // и вызывают suspend функции репозитория
+
+    private suspend fun fetchAllBooksInternal() { // Сделали suspend
+        val booksResult = repository.getAllBooks()
+        booksResult.onSuccess { _allBooks.postValue(it ?: emptyList()) }
+            .onFailure { _errorMessage.postValue("Книги: ${it.localizedMessage}") }
+    }
+
+    private suspend fun fetchUserBooksInternal(userId: String) {
+        Log.d("BookViewModel", "fetchUserBooksInternal called with userId: $userId")
+        if (userId.isBlank()) {
+            Log.d("BookViewModel", "UserId is blank, setting empty books list")
+            _myBooks.postValue(emptyList())
+            return
+        }
+
+        try {
+            Log.d("BookViewModel", "Fetching books from repository")
+            val booksResult = repository.getUserBooks(userId)
+            
+            booksResult.onSuccess { books ->
+                val bookCount = books?.size ?: 0
+                Log.d("BookViewModel", "Successfully fetched $bookCount books")
+                _myBooks.postValue(books ?: emptyList())
             }.onFailure { error ->
-                Log.e("BookViewModel", "Failed to load exchange history", error)
-                _errorMessage.postValue("Failed to load exchange history: ${error.message}")
+                Log.e("BookViewModel", "Failed to fetch user books", error)
+                _errorMessage.postValue("Мои книги: ${error.localizedMessage}")
+                _myBooks.postValue(emptyList())
             }
-            _isLoading.postValue(false)
+        } catch (e: Exception) {
+            Log.e("BookViewModel", "Unexpected error in fetchUserBooksInternal", e)
+            _errorMessage.postValue("Unexpected error fetching books: ${e.localizedMessage}")
+            _myBooks.postValue(emptyList())
         }
     }
-    
-    fun clearErrorMessage() {
-        _errorMessage.postValue(null)
-    }
-    
-    fun clearExchangeResult() {
-        _exchangeResult.postValue(null)
-    }
-    
-    fun triggerExchange(book: Book) {
-        Log.d("BookViewModel", "Attempting to exchange book with ID: ${book.id}")
+
+    fun addBook(book: Book, imageUri: Uri?): LiveData<Result<String>> { // Возвращает LiveData<r>
+        val result = MutableLiveData<Result<String>>()
         viewModelScope.launch {
             _isLoading.postValue(true)
-            val currentUserId = _user.value?.id ?: ""
-            if (currentUserId.isEmpty()) {
-                _errorMessage.postValue("Пользователь не авторизован")
-                _isLoading.postValue(false)
-                return@launch
-            }
-            
-            val exchange = Exchange(
-                bookId = book.id ?: "",
-                oldOwnerId = book.userId ?: "",
-                newOwnerId = currentUserId,
-                status = "pending",
-                bookTitle = book.title ?: "Неизвестная книга",
-                oldOwnerName = book.ownerName ?: "Неизвестный владелец",
-                newOwnerName = _user.value?.nickname ?: ""
-            )
-            
-            repository.createExchange(exchange).onSuccess {
-                _exchangeResult.postValue(Result.success(Unit))
-            }.onFailure { error ->
-                Log.e("BookViewModel", "Exchange failed", error)
-                _errorMessage.postValue("Не удалось создать обмен: ${error.message}")
-                _exchangeResult.postValue(Result.failure(error))
-            }
-            _isLoading.postValue(false)
-        }
-    }
-    
-    fun loginUser(email: String, password: String): LiveData<Result<FirebaseUser>> {
-        val result = MutableLiveData<Result<FirebaseUser>>()
-        viewModelScope.launch {
-            _isLoading.postValue(true)
-            repository.loginUser(email, password).onSuccess { user ->
-                result.postValue(Result.success(user))
-                // After successful login, try to load user data
-                repository.getCurrentUser().onSuccess { currentUser ->
-                    _user.postValue(currentUser)
-                    Log.d("BookViewModel", "User data loaded after login: ${currentUser.nickname}")
-                    fetchUserBooksInternal(currentUser.id)
-                    loadUserExchangeHistory(currentUser.id)
-                }.onFailure { error ->
-                    Log.e("BookViewModel", "Failed to load user data after login", error)
-                    _errorMessage.postValue("Вход выполнен, но не удалось загрузить данные пользователя")
+            val addResult = repository.addBook(book, imageUri)
+            result.postValue(addResult)
+            addResult.onFailure { _errorMessage.postValue("Добавление: ${it.localizedMessage}") }
+            if (addResult.isSuccess) { 
+                fetchAllBooksInternal() // Обновляем общий список
+                // Также обновляем список пользовательских книг
+                auth.currentUser?.uid?.let { userId ->
+                    Log.d("BookViewModel", "Reloading user books after adding new book")
+                    fetchUserBooksInternal(userId)
                 }
-            }.onFailure { error ->
-                Log.e("BookViewModel", "Login failed", error)
-                _errorMessage.postValue("Ошибка входа: ${error.message}")
-                result.postValue(Result.failure(error))
             }
             _isLoading.postValue(false)
         }
         return result
     }
-    
+
     fun registerUser(
-        nickname: String,
+        email: String,
+        password: String,
         name: String,
+        nickname: String,
         city: String,
         street: String,
         houseNumber: String,
         age: Int,
-        phone: String,
-        email: String,
-        password: String
+        phone: String
     ): LiveData<Result<FirebaseUser>> {
         val result = MutableLiveData<Result<FirebaseUser>>()
         viewModelScope.launch {
             _isLoading.postValue(true)
-            
-            // Create a user object with the registration data
-            val newUser = User(
-                id = "", // Will be set by the repository
-                nickname = nickname,
-                name = name,
-                email = email,
-                city = city,
-                street = street,
-                houseNumber = houseNumber,
-                age = age,
-                phone = phone
-            )
-            
-            // Call the repository to register the user
-            repository.registerUser(newUser, password).onSuccess { firebaseUser ->
-                result.postValue(Result.success(firebaseUser))
-                
-                // Load the user data after registration
-                repository.getCurrentUser().onSuccess { currentUser ->
-                    _user.postValue(currentUser)
-                    Log.d("BookViewModel", "User data loaded after registration: ${currentUser.nickname}")
-                }.onFailure { error ->
-                    Log.e("BookViewModel", "Failed to load user data after registration", error)
-                    _errorMessage.postValue("Регистрация выполнена, но не удалось загрузить данные пользователя")
-                }
-            }.onFailure { error ->
-                Log.e("BookViewModel", "Registration failed", error)
-                _errorMessage.postValue("Ошибка регистрации: ${error.message}")
-                result.postValue(Result.failure(error))
-            }
-            
+            val registerResult = repository.registerUser(nickname, name, city, street, houseNumber, age, phone, email, password)
+            result.postValue(registerResult)
+            registerResult.onFailure { _errorMessage.postValue("Регистрация: ${it.localizedMessage}") }
             _isLoading.postValue(false)
         }
         return result
     }
-    
-    fun saveUser(user: User) {
-        Log.d("BookViewModel", "Attempting to save user ${user.id}")
+
+    fun loginUser(email: String, password: String): LiveData<Result<FirebaseUser>> { // Возвращает LiveData<Result>
+        val result = MutableLiveData<Result<FirebaseUser>>()
         viewModelScope.launch {
             _isLoading.postValue(true)
-            repository.updateUserProfile(user).onSuccess {
-                Log.i("BookViewModel", "User ${user.id} updated successfully.")
-                _user.postValue(user)
-            }.onFailure { error ->
-                Log.e("BookViewModel", "Failed to update user ${user.id}", error)
-                _errorMessage.postValue("Failed to save profile: ${error.message}")
+            val loginResult = repository.loginUser(email, password)
+            result.postValue(loginResult)
+            // observeAuthState сам обработает нового пользователя
+            loginResult.onFailure { _errorMessage.postValue("Вход: ${it.localizedMessage}") }
+            _isLoading.postValue(false)
+        }
+        return result
+    }
+
+
+    fun triggerExchange(bookToExchange: Book) {
+        val currentUser = _user.value
+        if (currentUser == null) {
+            _errorMessage.postValue("Войдите для обмена")
+            _exchangeResult.postValue(Result.failure(IllegalStateException("User not logged in")))
+            return
+        }
+        if (bookToExchange.userId == currentUser.userId) {
+            _errorMessage.postValue("Нельзя обменять свою же книгу")
+            _exchangeResult.postValue(Result.failure(IllegalArgumentException("Cannot exchange own book")))
+            return
+        }
+
+        _exchangeResult.postValue(null)
+        _errorMessage.value = null
+
+        viewModelScope.launch {
+            Log.d("BookViewModel", "Triggering exchange for book ${bookToExchange.id} to user ${currentUser.userId}")
+            _isLoading.postValue(true)
+            val exchangeRepoResult = repository.recordExchangeAndUpdateBook(bookToExchange, currentUser)
+            _exchangeResult.postValue(exchangeRepoResult)
+
+            if (exchangeRepoResult.isSuccess) {
+                Log.i("BookViewModel", "Exchange recorded successfully in repo for book ${bookToExchange.id}")
+                // Данные в репозитории обновились, запрашиваем их снова
+                launch { fetchAllBooksInternal() }
+                launch { fetchUserBooksInternal(currentUser.userId) }
+                launch { loadUserExchangeHistory(currentUser.userId) }
+            } else {
+                _errorMessage.postValue(exchangeRepoResult.exceptionOrNull()?.localizedMessage ?: "Ошибка обмена")
             }
             _isLoading.postValue(false)
+        }
+    }
+
+    fun clearExchangeResult() { _exchangeResult.value = null }
+
+    fun loadUserExchangeHistory(userId: String) {
+        if (userId.isBlank()) return
+        viewModelScope.launch {
+            _isLoading.postValue(true) // Возможно, нужен отдельный isLoading для истории
+            val historyResult = repository.getUserExchangeHistory(userId)
+            historyResult.onSuccess { (given, received) ->
+                _givenExchanges.postValue(given)
+                _receivedExchanges.postValue(received)
+                Log.d("BookViewModel", "Exchange history loaded: Given=${given.size}, Received=${received.size}")
+            }.onFailure { error ->
+                _givenExchanges.postValue(emptyList())
+                _receivedExchanges.postValue(emptyList())
+                _errorMessage.postValue("Ошибка загрузки истории: ${error.localizedMessage}")
+            }
+            _isLoading.postValue(false)
+        }
+    }
+
+
+    fun saveUser(user: User) {
+        viewModelScope.launch {
+            _isLoading.postValue(true)
+            val result = repository.updateUser(user)
+            result.onSuccess {
+                _user.postValue(user)
+                // Показываем сообщение об успехе через LiveData, если нужно
+                // _userUpdateSuccess.postValue(true)
+            }.onFailure { error ->
+                _errorMessage.postValue("Не удалось сохранить профиль: ${error.localizedMessage}")
+            }
+            _isLoading.postValue(false)
+        }
+    }
+
+    fun clearErrorMessage() { _errorMessage.value = null }
+
+    // Метод для чата
+    fun getOrCreateChatForNavigation(otherUserId: String): LiveData<Result<String>> {
+        val result = MutableLiveData<Result<String>>()
+        val currentUserId = auth.currentUser?.uid
+
+        if (currentUserId == null || otherUserId == currentUserId) {
+            result.postValue(Result.failure(Exception(if (currentUserId == null) "Сначала войдите" else "Нельзя чатиться с собой")))
+            return result
+        }
+        viewModelScope.launch {
+            _isLoading.postValue(true)
+            val chatResult = repository.getOrCreateChat(currentUserId, otherUserId) // Вызываем репо
+            result.postValue(chatResult) // Передаем результат
+            chatResult.onFailure { _errorMessage.postValue("Чат: ${it.localizedMessage}") }
+            _isLoading.postValue(false)
+        }
+        return result
+    }
+
+    // Метод для загрузки списка чатов (для ChatListFragment)
+    fun loadUserChats() {
+        val userId = auth.currentUser?.uid ?: return
+        viewModelScope.launch {
+            _isLoading.postValue(true)
+            repository.getUserChatsFlow(userId) // Получаем Flow
+                .catch { e ->
+                    _errorMessage.postValue("Чаты: ${e.localizedMessage}")
+                    _isLoading.postValue(false) // Обязательно сбрасываем загрузку при ошибке
+                }
+                .collect { result -> // Собираем Result из Flow
+                    result.onSuccess { chats -> _chatList.postValue(chats) } // Обновляем LiveData
+                        .onFailure { _errorMessage.postValue("Чаты: ${it.localizedMessage}") }
+                    // isLoading сбросится, когда Flow завершится или будет ошибка
+                    _isLoading.postValue(false) // Пока ставим здесь
+                }
+            // Альтернатива - использовать stateIn для преобразования Flow в StateFlow внутри ViewModel
+        }
+    }
+
+    fun loadMyBooks() {
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            Log.d("BookViewModel", "Explicitly loading books for current user: ${currentUser.uid}")
+            viewModelScope.launch {
+                _isLoading.postValue(true)
+                fetchUserBooksInternal(currentUser.uid)
+                _isLoading.postValue(false)
+            }
+        } else {
+            Log.d("BookViewModel", "Cannot load books - user not logged in")
+            _errorMessage.postValue("Войдите, чтобы увидеть свои книги")
         }
     }
 
     override fun onCleared() {
         super.onCleared()
         Log.d("BookViewModel", "ViewModel Cleared")
+        // auth.removeAuthStateListener(..) // Важно удалить слушатель Auth!
     }
 }

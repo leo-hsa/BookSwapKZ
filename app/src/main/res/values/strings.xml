@@ -18,6 +18,21 @@
     <string name="author_hint">Автор</string>
     <string name="condition_hint">Состояние</string> <!-- Может не использоваться, т.к. Spinner -->
     <string name="search_hint">Поиск по названию, автору, городу</string> <!-- Уточнено -->
+    <string name="filters">Фильтры</string>
+    <string name="book_type">Тип книги</string>
+    <string name="price_type">Тип цены</string>
+    <string name="city">Город</string>
+    <string name="apply">ПРИМЕНИТЬ</string>
+
+    <string name="reset">СБРОСИТЬ</string>
+
+    <!-- Типы фильтров -->
+    <string name="all_books">Все книги</string>
+    <string name="for_rent">Для аренды</string>
+    <string name="all_prices">Все цены</string>
+    <string name="free">Бесплатно</string>
+    <string name="paid">Платно</string>
+    <string name="all_cities">Все города</string>
 
     <!-- Тексты кнопок -->
     <string name="register_button">Зарегистрироваться</string>
@@ -56,6 +71,7 @@
     <string name="no_books_available">Нет доступных книг</string> <!-- Может пригодиться -->
     <string name="no_rentable_books">Книг для аренды пока нет</string>
     <string name="book_image">Изображение книги</string>
+    <string name="book_image_description">Изображение книги</string>
 
     <!-- Сообщения об ошибках/валидации -->
     <string name="nickname_exists">Этот никнейм уже занят</string>
@@ -71,38 +87,28 @@
         <item>Потрепанная</item>
     </string-array>
 
-    <string-array name="cities">
-        <item>Алматы</item>
-        <item>Астана</item>
-        <item>Шымкент</item>
-        <item>Караганда</item>
-        <item>Актобе</item>
-        <item>Тараз</item>
-        <item>Павлодар</item>
-        <item>Усть-Каменогорск</item>
-        <item>Семей</item>
-        <item>Атырау</item>
-        <item>Кызылорда</item>
-        <item>Актау</item>
-        <item>Уральск</item>
-        <item>Костанай</item>
-        <item>Петропавловск</item>
-        <item>Туркестан</item>
-        <item>Талдыкорган</item>
-        <item>Кокшетау</item>
-        <item>Жезказган</item>
-        <!-- Добавьте другие города -->
-    </string-array>
-
-    <string-array name="rent_periods">
-        <item>1 неделя</item>
-        <item>2 недели</item>
-        <item>1 месяц</item>
-    </string-array>
-
+    <!-- Rental related strings -->
     <string name="rent_switch">Сдать в аренду</string>
     <string name="rent_duration_hint">Срок аренды (часов)</string>
     <string name="rent_price_hint">Стоимость за час (₸)</string>
     <string name="rent_total_hint">Итого: %1$.0f ₸</string>
+
+    <!-- Cities -->
+    <string-array name="cities">
+        <item>Алматы</item>
+        <item>Астана</item>
+        <item>Шымкент</item>
+        <item>Актобе</item>
+        <item>Атырау</item>
+        <item>Караганда</item>
+        <item>Костанай</item>
+        <item>Павлодар</item>
+        <item>Петропавловск</item>
+        <item>Семей</item>
+        <item>Талдыкорган</item>
+        <item>Тараз</item>
+        <item>Уральск</item>
+        <item>Усть-Каменогорск</item>
+    </string-array>
 
 </resources>

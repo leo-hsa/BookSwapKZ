@@ -19,6 +19,8 @@ class BookSwapApplication : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
+        // Initialize Firebase
+        com.google.firebase.FirebaseApp.initializeApp(this)
         // WorkManager will be initialized automatically by the Configuration.Provider
     }
-} 
+}

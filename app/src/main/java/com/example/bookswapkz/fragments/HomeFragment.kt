@@ -8,22 +8,19 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import android.widget.AutoCompleteTextView
 import android.widget.Toast
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Observer
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import com.example.bookswapkz.R
-import com.example.bookswapkz.adapters.BookAdapter // Убедитесь, что пакет правильный
+import com.example.bookswapkz.adapters.BookAdapter
 import com.example.bookswapkz.databinding.DialogFiltersBinding
 import com.example.bookswapkz.databinding.FragmentHomeBinding
-import com.example.bookswapkz.models.Book // Убедитесь, что модель импортирована
-import com.example.bookswapkz.utils.GridSpacingItemDecoration // Убедитесь, что утилита импортирована
-import com.example.bookswapkz.viewmodels.BookViewModel // Убедитесь, что ViewModel импортирована
-import com.google.android.material.chip.Chip
+import com.example.bookswapkz.models.Book
+import com.example.bookswapkz.utils.GridSpacingItemDecoration
+import com.example.bookswapkz.viewmodels.BookViewModel
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -37,47 +34,46 @@ class HomeFragment : Fragment() {
     private lateinit var bookAdapter: BookAdapter
     private var fullBookList: List<Book> = emptyList()
 
-    private object FilterType {
-        const val ALL_BOOKS = "All Books"
-        const val FOR_RENT = "For Rent"
-        const val ALL_PRICES = "All Prices"
-        const val FREE = "Free"
-        const val PAID = "Paid"
-    }
-    private var currentSearchQuery: String = ""
-    private var selectedRentType: String = FilterType.ALL_BOOKS
-    private var selectedPriceType: String = FilterType.ALL_PRICES
+    private var selectedRentType: String = "Все книги"
+    private var selectedPriceType: String = "Все цены"
     private var selectedCity: String? = null
+    private var currentSearchQuery: String = ""
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+        Log.d("HomeFragment", "onCreateView called")
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
+        Log.d("HomeFragment", "onViewCreated called")
         setupRecyclerView()
         setupSearch()
         setupFilterButton()
-        setupFab()
+        setupNavigation()
         observeViewModel()
-
-        updateUiState(isLoading = true, isInitialLoad = true)
+        
+        // Показываем индикатор загрузки сразу
+        binding.progressBar?.isVisible = true
+    }
+    
+    private fun setupNavigation() {
+        // Настраиваем кнопку добавления книги
+        binding.addBookFab?.setOnClickListener {
+            findNavController().navigate(R.id.addBookFragment)
+        }
     }
 
     private fun setupRecyclerView() {
-        bookAdapter = BookAdapter { book ->
-            handleBookClick(book)
-        }
+        bookAdapter = BookAdapter { book -> handleBookClick(book) }
         binding.recentBooksRecyclerView?.apply {
             layoutManager = GridLayoutManager(requireContext(), 2)
             adapter = bookAdapter
-            // Убедитесь, что R.dimen.grid_spacing существует
             addItemDecoration(GridSpacingItemDecoration(2, resources.getDimensionPixelSize(R.dimen.grid_spacing), true))
         }
     }
@@ -113,162 +109,117 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun setupFab() {
-        binding.addBookFab?.setOnClickListener {
-            findNavController().navigate(HomeFragmentDirections.actionHomeToAddBook())
-        }
-        // animateFabIn() // Анимация пока убрана
-    }
-
     private fun showFilterDialog() {
-        // --- Код showFilterDialog остается таким же, как в предыдущем ответе ---
-        // --- Он использует временные переменные tempSelected... ---
-        // --- и кнопки AlertDialog "Применить", "Отмена", "Сбросить" ---
-        // --- для обновления основных переменных selected... и вызова applyFilters ---
         val dialogBinding = DialogFiltersBinding.inflate(layoutInflater)
         val dialogView = dialogBinding.root
 
-        val cities = resources.getStringArray(R.array.cities)
-        val cityAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, cities)
-        dialogBinding.cityAutoComplete?.setAdapter(cityAdapter)
+        // Setup filter dropdowns
+        setupFilterDropdowns(dialogBinding)
 
-        // Восстановление состояния
-        dialogBinding.cityAutoComplete?.setText(selectedCity ?: "", false)
-        when (selectedRentType) {
-            FilterType.FOR_RENT -> dialogBinding.forRentChip?.isChecked = true
-            else -> dialogBinding.allBooksChip?.isChecked = true
-        }
-        val priceGroupEnabled = selectedRentType == FilterType.FOR_RENT
-        dialogBinding.priceTypeChipGroup?.isEnabled = priceGroupEnabled
-        dialogBinding.allPricesChip?.isEnabled = priceGroupEnabled
-        dialogBinding.freeChip?.isEnabled = priceGroupEnabled
-        dialogBinding.paidChip?.isEnabled = priceGroupEnabled
-        if (priceGroupEnabled) {
-            when (selectedPriceType) {
-                FilterType.FREE -> dialogBinding.freeChip?.isChecked = true
-                FilterType.PAID -> dialogBinding.paidChip?.isChecked = true
-                else -> dialogBinding.allPricesChip?.isChecked = true
-            }
-        } else {
-            dialogBinding.allPricesChip?.isChecked = true
-        }
-
-        // Временные переменные для диалога
-        var tempSelectedRentType = selectedRentType
-        var tempSelectedPriceType = selectedPriceType
-        var tempSelectedCity = selectedCity
-
-        // Слушатели
-        dialogBinding.rentTypeChipGroup?.setOnCheckedStateChangeListener { group, checkedIds ->
-            val checkedId = checkedIds.firstOrNull()
-            tempSelectedRentType = if (checkedId == R.id.forRentChip) FilterType.FOR_RENT else FilterType.ALL_BOOKS
-            val isRentSelected = tempSelectedRentType == FilterType.FOR_RENT
-            dialogBinding.priceTypeChipGroup?.isEnabled = isRentSelected
-            dialogBinding.allPricesChip?.isEnabled = isRentSelected
-            dialogBinding.freeChip?.isEnabled = isRentSelected
-            dialogBinding.paidChip?.isEnabled = isRentSelected
-            if (!isRentSelected) {
-                tempSelectedPriceType = FilterType.ALL_PRICES
-                dialogBinding.allPricesChip?.isChecked = true
-            } else if (dialogBinding.priceTypeChipGroup?.checkedChipId == View.NO_ID) {
-                dialogBinding.allPricesChip?.isChecked = true
-                tempSelectedPriceType = FilterType.ALL_PRICES
-            }
-        }
-        dialogBinding.priceTypeChipGroup?.setOnCheckedStateChangeListener { group, checkedIds ->
-            val checkedId = checkedIds.firstOrNull()
-            tempSelectedPriceType = when(checkedId) {
-                R.id.freeChip -> FilterType.FREE
-                R.id.paidChip -> FilterType.PAID
-                else -> FilterType.ALL_PRICES
-            }
-        }
-        dialogBinding.cityAutoComplete?.setOnItemClickListener { _, _, position, _ ->
-            tempSelectedCity = cityAdapter.getItem(position)
-        }
-        dialogBinding.cityAutoComplete?.addTextChangedListener(object: TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {
-                val inputText = s?.toString() ?: ""
-                if (cities.contains(inputText)) { tempSelectedCity = inputText }
-                else if (inputText.isBlank()) { tempSelectedCity = null }
-                else { if (!cities.contains(tempSelectedCity)) { tempSelectedCity = null } }
-            }
-        })
-
-        // Кнопки AlertDialog
         MaterialAlertDialogBuilder(requireContext())
             .setView(dialogView)
-            .setTitle("Фильтры")
-            .setPositiveButton("Применить") { dialogInterface, _ ->
-                selectedRentType = tempSelectedRentType
-                selectedPriceType = tempSelectedPriceType
-                selectedCity = tempSelectedCity // Сохраняем город из AutoCompleteTextView
+            .setPositiveButton(R.string.apply) { _, _ ->
                 applyFilters()
-                dialogInterface.dismiss()
             }
-            .setNegativeButton("Отмена", null)
-            .setNeutralButton("Сбросить") { dialogInterface, _ ->
-                selectedRentType = FilterType.ALL_BOOKS
-                selectedPriceType = FilterType.ALL_PRICES
+            .setNegativeButton(R.string.cancel, null)
+            .setNeutralButton(R.string.reset) { _, _ ->
+                selectedRentType = "Все книги"
+                selectedPriceType = "Все цены"
                 selectedCity = null
                 applyFilters()
-                dialogInterface.dismiss()
             }
             .show()
     }
 
-    // --- ИСПРАВЛЕННЫЙ applyFilters (БЕЗ searchable полей) ---
-    private fun applyFilters() {
-        val sourceList = fullBookList.toList()
+    private fun setupFilterDropdowns(dialogBinding: DialogFiltersBinding) {
+        // Book types
+        val rentTypes = arrayOf("Все книги", "Для аренды")
+        val rentAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, rentTypes)
+        dialogBinding.rentTypeAutoComplete?.setAdapter(rentAdapter)
+        dialogBinding.rentTypeAutoComplete?.setText(selectedRentType, false)
 
-        val filteredList = sourceList.filter { book ->
-            // 1. Фильтр Поиска (стандартный contains, ignoreCase)
-            val matchesSearch = currentSearchQuery.isEmpty() ||
-                    book.title.contains(currentSearchQuery, ignoreCase = true) ||
-                    book.author.contains(currentSearchQuery, ignoreCase = true) ||
-                    book.city.contains(currentSearchQuery, ignoreCase = true) ||
-                    (book.ownerNickname?.contains(currentSearchQuery, ignoreCase = true) ?: false) // По нику владельца
+        // Price types
+        val priceTypes = arrayOf("Все цены", "Бесплатно", "Платно")
+        val priceAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, priceTypes)
+        dialogBinding.priceTypeAutoComplete?.setAdapter(priceAdapter)
+        dialogBinding.priceTypeAutoComplete?.setText(selectedPriceType, false)
 
-            // 2. Фильтр Города
-            val matchesCity = selectedCity.isNullOrBlank() ||
-                    book.city.equals(selectedCity, ignoreCase = true)
+        // Cities
+        val cities = resources.getStringArray(R.array.cities)
+        val cityAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, cities)
+        dialogBinding.cityAutoComplete?.setAdapter(cityAdapter)
+        dialogBinding.cityAutoComplete?.setText(selectedCity ?: "", false)
 
-            // 3. Фильтр Типа (Аренда / Все)
-            val matchesRentType = when (selectedRentType) {
-                FilterType.FOR_RENT -> book.isForRent
-                else -> true // ALL_BOOKS или null
-            }
-
-            // 4. Фильтр Цены (только если выбрана Аренда)
-            var matchesPriceType = true
-            if (selectedRentType == FilterType.FOR_RENT) {
-                matchesPriceType = when (selectedPriceType) {
-                    FilterType.FREE -> book.rentPrice == null || book.rentPrice <= 0.0
-                    FilterType.PAID -> book.rentPrice != null && book.rentPrice > 0.0
-                    else -> true // ALL_PRICES или null
-                }
-            }
-
-            matchesSearch && matchesCity && matchesRentType && matchesPriceType
+        // Handle selections
+        dialogBinding.rentTypeAutoComplete?.setOnItemClickListener { _, _, _, _ ->
+            selectedRentType = dialogBinding.rentTypeAutoComplete?.text?.toString() ?: "Все книги"
         }
 
-        Log.d("HomeFragment", "Filtering complete. Source: ${sourceList.size}, Filtered: ${filteredList.size}, Query: '$currentSearchQuery', Rent: $selectedRentType, Price: $selectedPriceType, City: $selectedCity")
+        dialogBinding.priceTypeAutoComplete?.setOnItemClickListener { _, _, _, _ ->
+            selectedPriceType = dialogBinding.priceTypeAutoComplete?.text?.toString() ?: "Все цены"
+        }
+
+        dialogBinding.cityAutoComplete?.setOnItemClickListener { _, _, _, _ ->
+            selectedCity = dialogBinding.cityAutoComplete?.text?.toString()
+        }
+    }
+
+    private fun applyFilters() {
+        val sourceList = fullBookList.toList()
+        
+        val filteredList = sourceList.filter { book ->
+            // Search filter
+            val searchQuery = currentSearchQuery.trim().lowercase()
+            val matchesSearch = searchQuery.isEmpty() || listOf(
+                book.title.lowercase(),
+                book.author.lowercase(),
+                book.city.lowercase(),
+                book.ownerNickname?.lowercase() ?: ""
+            ).any { it.contains(searchQuery) }
+
+            // Book type filter
+            val matchesRentType = when (selectedRentType) {
+                "Для аренды" -> book.isForRent
+                else -> true
+            }
+
+            // Price type filter
+            val matchesPriceType = when (selectedPriceType) {
+                "Бесплатно" -> !book.isForRent
+                "Платно" -> book.isForRent
+                else -> true
+            }
+
+            // City filter
+            val matchesCity = selectedCity.isNullOrBlank() || book.city == selectedCity
+
+            matchesSearch && matchesRentType && matchesPriceType && matchesCity
+        }
 
         bookAdapter.submitList(filteredList)
-
-        // Обновляем UI после фильтрации
-        updateUiState(isLoading = false, books = filteredList, isFilteredResult = true)
+        updateEmptyState(filteredList)
     }
-    // --- КОНЕЦ ИСПРАВЛЕННОГО applyFilters ---
 
+    private fun updateEmptyState(books: List<Book>) {
+        binding.emptyListTextView?.isVisible = books.isEmpty()
+        binding.recentBooksRecyclerView?.isVisible = books.isNotEmpty()
+        
+        if (books.isEmpty()) {
+            binding.emptyListTextView?.text = if (currentSearchQuery.isNotBlank() || 
+                selectedRentType != "Все книги" || 
+                selectedPriceType != "Все цены" || 
+                selectedCity != null) {
+                getString(R.string.no_books_found_filters)
+            } else {
+                getString(R.string.no_books_added_yet)
+            }
+        }
+    }
 
     private fun observeViewModel() {
         viewModel.allBooks.observe(viewLifecycleOwner) { books ->
             Log.d("HomeFragment", "Observed allBooks update: ${books?.size ?: "null"} books")
             fullBookList = books ?: emptyList()
-            updateUiState(isLoading = false, books = fullBookList, isInitialLoad = true)
             applyFilters()
         }
 
