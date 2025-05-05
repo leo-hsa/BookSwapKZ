@@ -80,6 +80,7 @@
     <!-- Сообщения об ошибках/валидации -->
     <string name="nickname_exists">Этот никнейм уже занят</string>
     <string name="field_required">Это поле обязательно</string>
+    <string name="error_index_required">Ошибка загрузки книг. Требуется создать индекс в Firebase Console: https://console.firebase.google.com/v1/r/project/bookswap-8b7f4/firestore/indexes</string>
 
     <!-- Массивы для Спиннеров -->
     <string-array name="book_conditions">
