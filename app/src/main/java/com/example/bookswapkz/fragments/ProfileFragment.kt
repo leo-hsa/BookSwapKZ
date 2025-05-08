@@ -1,22 +1,23 @@
 package com.example.bookswapkz.fragments
 
+import android.app.AlertDialog
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast // <<<--- ДОБАВЬ ИМПОРТ
+import android.widget.Toast
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
+import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
-// import com.bumptech.glide.Glide // Не используется, так как нет аватара
 import com.example.bookswapkz.R
-// import com.example.bookswapkz.adapters.ExchangeHistoryAdapter // Закомментируй, если не используется
+import com.example.bookswapkz.adapters.ExchangeRequestAdapter // Используем адаптер запросов
 import com.example.bookswapkz.databinding.FragmentProfileBinding
 import com.example.bookswapkz.models.User
-import com.example.bookswapkz.viewmodels.ProfileViewModel // Твоя ViewModel
+import com.example.bookswapkz.utils.EventObserver
+import com.example.bookswapkz.viewmodels.BookViewModel
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -26,15 +27,13 @@ class ProfileFragment : Fragment() {
     private var _binding: FragmentProfileBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: ProfileViewModel by viewModels()
-    // private lateinit var exchangeHistoryAdapter: ExchangeHistoryAdapter // Закомментируй, если не используется
+    private val bookViewModel: BookViewModel by activityViewModels()
+    private lateinit var exchangeRequestAdapter: ExchangeRequestAdapter // Адаптер для запросов
     private val auth = FirebaseAuth.getInstance()
     private val TAG = "ProfileFragment"
 
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         _binding = FragmentProfileBinding.inflate(inflater, container, false)
         return binding.root
@@ -52,127 +51,131 @@ class ProfileFragment : Fragment() {
 
         Log.d(TAG, "User authenticated: ${currentUser.uid}. Setting up profile.")
         setupToolbar()
-        // setupRecyclerView() // Закомментируй, если история обменов не используется
+        setupRecyclerView() // Настраиваем RecyclerView для запросов
         setupClickListeners()
         observeViewModel()
 
-        // Загружаем данные пользователя
-        viewModel.getUserData(currentUser.uid)
-        // loadExchangeHistory() // Закомментируй, если история обменов не используется
+        // НЕ загружаем запросы автоматически, ждем нажатия кнопки
     }
 
     private fun setupToolbar() {
-        binding.toolbarProfile.setNavigationOnClickListener {
-            findNavController().popBackStack()
-        }
-        // Можно добавить меню, если нужно
+        binding.toolbarProfile.setNavigationOnClickListener { findNavController().popBackStack() }
     }
 
-    /* // Закомментируй, если история обменов не используется
     private fun setupRecyclerView() {
-        exchangeHistoryAdapter = ExchangeHistoryAdapter()
+        exchangeRequestAdapter = ExchangeRequestAdapter(
+            onAcceptClick = { exchange -> bookViewModel.acceptExchange(exchange) },
+            onRejectClick = { exchange -> bookViewModel.rejectExchange(exchange) }
+        )
+        // Используем RecyclerView, который был для истории
         binding.exchangeHistoryRecyclerView.apply {
             layoutManager = LinearLayoutManager(context)
-            adapter = exchangeHistoryAdapter
+            adapter = exchangeRequestAdapter
             isNestedScrollingEnabled = false
         }
     }
-    */
 
     private fun setupClickListeners() {
         binding.myBooksButton.setOnClickListener {
-            try {
-                findNavController().navigate(R.id.action_profileFragment_to_myBooksFragment)
-            } catch (e: Exception) {
-                Log.e(TAG, "Navigation to myBooks failed", e)
-                Toast.makeText(context, "Не удалось перейти к книгам", Toast.LENGTH_SHORT).show()
-            }
+            try { findNavController().navigate(R.id.action_profileFragment_to_myBooksFragment) }
+            catch (e: Exception) { Log.e(TAG, "Nav to myBooks failed", e); showNavErrorToast() }
         }
-
         binding.editProfileButton.setOnClickListener {
-            try {
-                findNavController().navigate(R.id.action_profileFragment_to_editProfileFragment)
-            } catch (e: Exception) {
-                Log.e(TAG, "Navigation to editProfile failed", e)
-                Toast.makeText(context, "Не удалось перейти к редактированию", Toast.LENGTH_SHORT).show()
-            }
+            try { findNavController().navigate(R.id.action_profileFragment_to_editProfileFragment) }
+            catch (e: Exception) { Log.e(TAG, "Nav to editProfile failed", e); showNavErrorToast() }
         }
+        // КНОПКА ЗАГРУЗКИ ЗАПРОСОВ
+        binding.loadRequestsButton.setOnClickListener {
+            Log.d(TAG, "Load requests button clicked.")
+            bookViewModel.loadPendingReceivedRequests()
+            // Сразу показываем заголовок, список будет обновлен через LiveData
+            binding.exchangeHistoryTitle.isVisible = true
+        }
+        binding.logoutButton.setOnClickListener { showLogoutConfirmationDialog() }
+    }
 
-        binding.logoutButton.setOnClickListener {
-            // Упрощенный выход без диалога
-            Log.d(TAG, "Logout button clicked.")
-            auth.signOut()
-            navigateToLogin() // Переходим на логин после выхода
-        }
+    private fun showLogoutConfirmationDialog() {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Выход").setMessage("Вы уверены?")
+            .setPositiveButton("Выйти") { _, _ -> auth.signOut(); navigateToLogin() }
+            .setNegativeButton("Отмена", null).show()
     }
 
     private fun observeViewModel() {
-        viewModel.userData.observe(viewLifecycleOwner) { user ->
+        // Наблюдаем за данными пользователя
+        bookViewModel.user.observe(viewLifecycleOwner) { user ->
             user?.let { bindUserData(it) } ?: run {
-                Log.w(TAG, "Received null user data from ViewModel.")
-                // Показываем заглушки, если данные пользователя null
-                binding.nameTextView.text = "Пользователь"
-                binding.subtitleTextView.text = auth.currentUser?.email ?: "Нет данных"
-                binding.cityValueTextView.text = "Неизвестно"
-                binding.ageValueTextView.text = "Неизвестно"
-                binding.profileImageView.setImageResource(R.drawable.placeholder_avatar)
+                bindUserData(User(nickname = "Загрузка...", email = auth.currentUser?.email ?: ""))
             }
         }
 
-        /* // Закомментируй, если история обменов не используется
-        viewModel.exchangeHistory.observe(viewLifecycleOwner) { exchanges ->
-            Log.d(TAG, "Received ${exchanges?.size ?: 0} exchanges from ViewModel.")
-            exchangeHistoryAdapter.submitList(exchanges ?: emptyList())
-            val hasExchanges = !exchanges.isNullOrEmpty()
-            binding.exchangeHistoryTitle.isVisible = hasExchanges
-            binding.exchangeHistoryRecyclerView.isVisible = hasExchanges
+        // Наблюдаем за ЗАПРОСАМИ на обмен
+        bookViewModel.pendingReceivedRequests.observe(viewLifecycleOwner) { requests ->
+            Log.d(TAG, "Received ${requests?.size ?: 0} pending exchange requests.")
+            exchangeRequestAdapter.submitList(requests ?: emptyList())
+            // Показываем RecyclerView только если есть запросы (после нажатия кнопки)
+            binding.exchangeHistoryRecyclerView.isVisible = !requests.isNullOrEmpty()
+            // Можно добавить сообщение "Нет входящих запросов", если список пуст ПОСЛЕ загрузки
+            if(binding.exchangeHistoryTitle.isVisible && requests.isNullOrEmpty() && bookViewModel.isLoadingRequests.value == false) {
+                Toast.makeText(context, "Нет входящих запросов", Toast.LENGTH_SHORT).show()
+            }
         }
-        */
 
-        // Убрана обработка errorMessage и isLoading для упрощения
-    }
+        // Наблюдаем за результатом принятия/отклонения
+        bookViewModel.exchangeActionResult.observe(viewLifecycleOwner, EventObserver { result ->
+            result.onFailure { error ->
+                Toast.makeText(context, "Ошибка обработки запроса: ${error.localizedMessage}", Toast.LENGTH_SHORT).show()
+            }
+            // Сообщение об успехе показывается из ViewModel
+        })
 
-    /* // Закомментируй, если история обменов не используется
-    private fun loadExchangeHistory() {
-        val userId = auth.currentUser?.uid
-        if (userId == null) {
-            Log.w(TAG, "Cannot load exchange history, user not logged in.")
-            binding.exchangeHistoryTitle.isVisible = false
-            binding.exchangeHistoryRecyclerView.isVisible = false
-            return
+        // Наблюдаем за статусом загрузки ЗАПРОСОВ
+        bookViewModel.isLoadingRequests.observe(viewLifecycleOwner) { isLoading ->
+            binding.progressBarRequests.isVisible = isLoading
+            // Скрываем RecyclerView на время загрузки, если он был виден
+            if (isLoading) binding.exchangeHistoryRecyclerView.isVisible = false
         }
-        Log.d(TAG, "Loading exchange history for user: $userId")
-        viewModel.loadExchangeHistory(userId)
+
+        // Наблюдаем за общими ошибками (если они не связаны с загрузкой запросов)
+        bookViewModel.errorMessage.observe(viewLifecycleOwner) { error ->
+            error?.let {
+                // Показываем ошибку, только если она не связана с загрузкой запросов (т.к. она обрабатывается выше)
+                if(bookViewModel.isLoadingRequests.value == false){
+                    Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+                }
+                bookViewModel.clearErrorMessage()
+            }
+        }
     }
-     */
 
     private fun bindUserData(user: User) {
-        Log.d(TAG, "Binding user data: $user")
-        binding.nameTextView.text = user.name.takeIf { it.isNotBlank() } ?: user.nickname
+        binding.nameTextView.text = user.name.takeIf { !it.isNullOrBlank() } ?: user.nickname
         binding.subtitleTextView.text = user.email
-        binding.cityValueTextView.text = user.city.takeIf { it.isNotBlank() } ?: "Не указан"
-        binding.ageValueTextView.text = user.age.takeIf { it > 0 }?.toString() ?: "Не указан"
-        binding.profileImageView.setImageResource(R.drawable.placeholder_avatar) // Плейсхолдер
+        binding.cityValueTextView.text = user.city.takeIf { !it.isNullOrBlank() } ?: "Не указан"
+        binding.ageValueTextView.text = user.age?.takeIf { it > 0 }?.toString() ?: "Не указан"
+        binding.profileImageView.setImageResource(R.drawable.placeholder_avatar)
     }
 
     private fun navigateToLogin() {
+        if (!isAdded || findNavController().currentDestination?.id == R.id.loginFragment) { return }
         try {
-            // Используй ID твоего action для перехода на экран логина
-            findNavController().navigate(R.id.action_profile_to_login)
+            findNavController().navigate(R.id.action_global_loginFragment)
         } catch (e: Exception) {
             Log.e(TAG,"Failed to navigate to login screen", e)
-            // Можно попытаться вернуться назад или показать ошибку
+            showNavErrorToast("Ошибка навигации на экран входа.")
             if (findNavController().previousBackStackEntry != null) {
-                findNavController().popBackStack()
-            } else {
-                Toast.makeText(context, "Требуется вход", Toast.LENGTH_LONG).show()
+                try { findNavController().popBackStack() } catch (ignored: Exception) {}
             }
         }
+    }
+
+    private fun showNavErrorToast(message: String = "Не удалось выполнить переход") {
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        Log.d(TAG, "onDestroyView called.")
+        binding.exchangeHistoryRecyclerView.adapter = null
         _binding = null
     }
 }
