@@ -2,15 +2,16 @@ package com.example.bookswapkz.adapters
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import androidx.core.view.isVisible // Импорт isVisible
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import com.example.bookswapkz.R // Импорт R
-import com.example.bookswapkz.databinding.ItemChatBinding // Используем правильный биндинг
+// import com.bumptech.glide.Glide // Glide больше не нужен здесь, если нет аватаров
+import com.example.bookswapkz.R
+import com.example.bookswapkz.databinding.ItemChatBinding
 import com.example.bookswapkz.models.Chat
-import java.text.SimpleDateFormat // Импорт SimpleDateFormat
+import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Locale
 
 class ChatAdapter(
@@ -19,37 +20,37 @@ class ChatAdapter(
 ) : ListAdapter<Chat, ChatAdapter.ChatViewHolder>(ChatDiffCallback()) {
 
     private val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+    private val dateFormat = SimpleDateFormat("dd.MM.yy", Locale.getDefault())
 
     inner class ChatViewHolder(private val binding: ItemChatBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(chat: Chat) {
-            // --- ИСПРАВЛЕНО: Получение данных собеседника ---
-            val otherParticipantPair = chat.participantInfo.entries.firstOrNull { it.key != currentUserId }
-            // Используем ?.get() для доступа к значениям в Map
-            val otherUserName = otherParticipantPair?.value?.get("nickname") ?: "Собеседник"
-            val otherUserAvatarUrl = otherParticipantPair?.value?.get("avatarUrl") // Предполагаем, что ключ 'avatarUrl'
+            val otherParticipantEntry = chat.participantInfo.entries.firstOrNull { it.key != currentUserId }
+            val otherUserName = otherParticipantEntry?.value?.get("nickname") ?: "Собеседник"
+            // val otherUserAvatarUrl = otherParticipantEntry?.value?.get("avatarUrl") // Убрали
 
-            // --- ИСПРАВЛЕНО: Используем правильные ID из item_chat.xml ---
             binding.userNameTextView.text = otherUserName
-            binding.lastMessageTextView.text = chat.lastMessageText ?: "" // Добавляем обработку null
-            binding.timestampTextView.text = chat.lastMessageTimestamp?.let { timeFormat.format(it) } ?: "" // Обработка null timestamp
+            binding.lastMessageTextView.text = chat.lastMessageText ?: "Нет сообщений"
 
-            // --- ИСПРАВЛЕНО: Загрузка аватара и обработка ошибок Glide ---
-            if (!otherUserAvatarUrl.isNullOrBlank()) {
-                Glide.with(binding.root.context)
-                    .load(otherUserAvatarUrl)
-                    .placeholder(R.drawable.placeholder_avatar) // Плейсхолдер при загрузке
-                    .error(R.drawable.placeholder_avatar) // Плейсхолдер при ошибке
-                    .circleCrop()
-                    .into(binding.avatarImageView)
-            } else {
-                binding.avatarImageView.setImageResource(R.drawable.placeholder_avatar) // Установка плейсхолдера по умолчанию
+            chat.lastMessageTimestamp?.let { timestamp ->
+                val messageCalendar = Calendar.getInstance()
+                messageCalendar.time = timestamp
+                val todayCalendar = Calendar.getInstance()
+                if (messageCalendar.get(Calendar.YEAR) == todayCalendar.get(Calendar.YEAR) &&
+                    messageCalendar.get(Calendar.DAY_OF_YEAR) == todayCalendar.get(Calendar.DAY_OF_YEAR)) {
+                    binding.timestampTextView.text = timeFormat.format(timestamp)
+                } else {
+                    binding.timestampTextView.text = dateFormat.format(timestamp)
+                }
+            } ?: run {
+                binding.timestampTextView.text = ""
             }
 
-            // Отображение счетчика непрочитанных
-            val unread = chat.unreadCount[currentUserId] ?: 0
+            // Всегда показываем плейсхолдер, так как avatarUrl убран
+            binding.avatarImageView.setImageResource(R.drawable.placeholder_avatar)
+
+            val unread = chat.unreadCount[currentUserId] ?: 0L
             binding.unreadCountTextView.isVisible = unread > 0
-            binding.unreadCountTextView.text = unread.toString()
-            // --- КОНЕЦ ИСПРАВЛЕНИЙ ---
+            binding.unreadCountTextView.text = if (unread > 99) "99+" else unread.toString()
 
             binding.root.setOnClickListener {
                 onItemClicked(chat)

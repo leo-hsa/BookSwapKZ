@@ -151,30 +151,24 @@
     <fragment
         android:id="@+id/chatFragment"
         android:name="com.example.bookswapkz.fragments.ChatFragment"
-        android:label="Chat"
-        tools:layout="@layout/fragment_chat">
-        <argument
-            android:name="userId"
-            app:argType="string" />
-        <argument
-            android:name="userName"
-            app:argType="string" />
-        <argument
-            android:name="chatId"
-            app:argType="string"
-            app:nullable="true"
-            android:defaultValue="@null" />
-        <argument
-            android:name="otherUserId"
-            app:argType="string"
-            app:nullable="true"
-            android:defaultValue="@null" />
-        <argument
-            android:name="otherUserName"
-            app:argType="string"
-            app:nullable="true"
-            android:defaultValue="@null" />
-    </fragment>
+        android:label="Чат"
+    tools:layout="@layout/fragment_chat">
+    <argument
+        android:name="chatId"
+        app:argType="string" />
+    <argument
+        android:name="userId"
+    app:argType="string" />
+    <argument
+        android:name="userName"
+    app:argType="string" />
+    <argument
+        android:name="otherUserId"
+    app:argType="string" />
+    <argument
+        android:name="otherUserName"
+    app:argType="string" />
+</fragment>
 
     <fragment
         android:id="@+id/editProfileFragment"

@@ -11,7 +11,7 @@
     <color name="teal">#009688</color>
     <color name="teal_light">#4DB6AC</color>
     <color name="teal_dark">#00796B</color>
-    
+    <color name="my_outline_variant_color">#C5C6C4</color>
     <color name="peach">#FFCCBC</color>
     <color name="very_light_gray">#F5F5F5</color>
     

@@ -1,13 +1,12 @@
 package com.example.bookswapkz.viewmodels
 
-import android.util.Log // Импорт Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bookswapkz.data.FirebaseRepository
 import com.example.bookswapkz.models.Message
+import com.example.bookswapkz.models.User // Для информации о собеседнике
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -18,105 +17,121 @@ import kotlin.Result
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
-    private val repository: FirebaseRepository, // <-- Правильный репозиторий
-    savedStateHandle: SavedStateHandle
+    private val repository: FirebaseRepository,
+    private val savedStateHandle: SavedStateHandle // Hilt внедрит аргументы навигации сюда
 ) : ViewModel() {
 
     private val auth = FirebaseAuth.getInstance()
+    private val currentUserId: String? = auth.currentUser?.uid
 
-    // Получаем аргументы из SavedStateHandle
-    val chatId: String = savedStateHandle.get<String>("chatId") ?: error("Chat ID is required")
-    val otherUserId: String = savedStateHandle.get<String>("otherUserId") ?: "" // Может быть пустым, если не передан
-    val otherUserName: String = savedStateHandle.get<String>("otherUserName") ?: "Чат" // Используем как заголовок
+    // Аргументы из Navigation Component
+    val chatId: String = savedStateHandle.get<String>("chatId") ?: ""
+    val otherUserIdFromNav: String = savedStateHandle.get<String>("otherUserId") ?: ""
+    val otherUserNameFromNav: String = savedStateHandle.get<String>("otherUserName") ?: "Чат"
 
     private val _messages = MutableStateFlow<List<Message>>(emptyList())
-    val messages: StateFlow<List<Message>> = _messages
+    val messages: StateFlow<List<Message>> = _messages.asStateFlow()
 
-    private val _isLoading = MutableStateFlow<Boolean>(false)
-    val isLoading: StateFlow<Boolean> get() = _isLoading
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     private val _errorMessage = MutableStateFlow<String?>(null)
-    val errorMessage: StateFlow<String?> = _errorMessage
+    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
     private val _sendMessageResult = MutableStateFlow<Result<Unit>?>(null)
-    val sendMessageResult: StateFlow<Result<Unit>?> get() = _sendMessageResult
+    val sendMessageResult: StateFlow<Result<Unit>?> = _sendMessageResult.asStateFlow()
+
+    // Информация о собеседнике (для отображения в Toolbar)
+    private val _otherUserInfo = MutableStateFlow<User?>(null)
+    val otherUserInfo: StateFlow<User?> = _otherUserInfo.asStateFlow()
+
 
     init {
-        loadMessages()
+        if (chatId.isBlank()) {
+            _errorMessage.value = "ID чата не предоставлен."
+            Log.e("ChatViewModel", "Chat ID is blank on init.")
+        } else {
+            loadMessages()
+            fetchOtherUserInfo()
+        }
     }
+
+    private fun fetchOtherUserInfo() {
+        if (otherUserIdFromNav.isNotBlank()) {
+            viewModelScope.launch {
+                repository.getUserById(otherUserIdFromNav).onSuccess { user ->
+                    _otherUserInfo.value = user
+                }.onFailure {
+                    Log.e("ChatViewModel", "Failed to fetch other user info for $otherUserIdFromNav", it)
+                    // Можно установить имя из аргументов навигации как fallback
+                }
+            }
+        }
+    }
+
 
     private fun loadMessages() {
         if (chatId.isBlank()) {
             _errorMessage.value = "Неверный ID чата для загрузки сообщений"
-            return
-        }
-        viewModelScope.launch {
-            _isLoading.value = true
-            // --- ИСПРАВЛЕНО: Вызываем правильный метод репозитория и обрабатываем Result<List<Message>> ---
-            repository.getChatMessagesFlow(chatId)
-                .catch { e ->
-                    Log.e("ChatViewModel", "Error collecting messages flow", e)
-                    _errorMessage.value = "Ошибка загрузки сообщений: ${e.localizedMessage}"
-                    _isLoading.value = false
-                }
-                .collect { result -> // Получаем Result из Flow
-                    result.onSuccess { messageList -> _messages.value = messageList }
-                        .onFailure { e -> _errorMessage.value = "Ошибка обработки сообщений: ${e.localizedMessage}" }
-                    _isLoading.value = false // Скрываем после первого сбора или ошибки
-                }
-        }
-    }
-    
-    // Public method to load messages with a specific chat ID
-    fun loadMessages(chatId: String) {
-        if (chatId.isBlank()) {
-            _errorMessage.value = "Неверный ID чата для загрузки сообщений"
+            Log.e("ChatViewModel", "loadMessages called with blank chatId.")
             return
         }
         viewModelScope.launch {
             _isLoading.value = true
             repository.getChatMessagesFlow(chatId)
                 .catch { e ->
-                    Log.e("ChatViewModel", "Error collecting messages flow", e)
+                    Log.e("ChatViewModel", "Error collecting messages flow for chatId: $chatId", e)
                     _errorMessage.value = "Ошибка загрузки сообщений: ${e.localizedMessage}"
                     _isLoading.value = false
                 }
                 .collect { result ->
-                    result.onSuccess { messageList -> _messages.value = messageList }
-                        .onFailure { e -> _errorMessage.value = "Ошибка обработки сообщений: ${e.localizedMessage}" }
-                    _isLoading.value = false
+                    _isLoading.value = false // Скрываем после первого сбора или ошибки
+                    result.onSuccess { messageList ->
+                        Log.d("ChatViewModel", "Received ${messageList.size} messages for chatId: $chatId")
+                        _messages.value = messageList
+                    }
+                    result.onFailure { e ->
+                        Log.e("ChatViewModel", "Failure in messages flow for chatId: $chatId", e)
+                        _errorMessage.value = "Ошибка обработки сообщений: ${e.localizedMessage}"
+                    }
                 }
         }
     }
 
-    fun sendMessage(text: String, senderId: String) {
+    fun sendMessage(text: String) {
         val trimmedText = text.trim()
         if (trimmedText.isBlank()) return
 
-        if (senderId.isBlank() || chatId.isBlank()) {
-            _errorMessage.value = "Ошибка отправки: ${if(senderId.isBlank()) "Пользователь не авторизован" else "Неверный ID чата"}"
+        if (currentUserId.isNullOrBlank() || chatId.isBlank()) {
+            _errorMessage.value = "Ошибка отправки: ${if(currentUserId.isNullOrBlank()) "Пользователь не авторизован" else "Неверный ID чата"}"
             _sendMessageResult.value = Result.failure(IllegalStateException("Invalid sender or chat ID"))
+            Log.e("ChatViewModel", "SendMessage failed: currentUserId=$currentUserId, chatId=$chatId")
             return
         }
 
+        // Создаем объект Message. timestamp будет установлен Firestore через @ServerTimestamp
         val message = Message(
-            chatId = chatId,
-            senderId = senderId,
-            text = trimmedText,
-            timestamp = Date()
+            chatId = chatId,      // id самого чата
+            senderId = currentUserId,
+            text = trimmedText
+            // timestamp будет установлен Firestore
         )
 
-        _sendMessageResult.value = null // Сброс
-        _errorMessage.value = null
+        _sendMessageResult.value = null // Сброс предыдущего результата
+        _errorMessage.value = null    // Сброс предыдущей ошибки
 
         viewModelScope.launch {
-            // Можно добавить _isSending LiveData/StateFlow
-            val sendResult = repository.sendMessage(chatId, message) // Вызываем suspend репозитория
-            _sendMessageResult.value = sendResult // Сохраняем результат
+            // Можно добавить _isSending LiveData/StateFlow, если нужна индикация отправки
+            Log.d("ChatViewModel", "Sending message: $message to chatId: $chatId")
+            val sendResult = repository.sendMessage(chatId, message)
+            _sendMessageResult.value = sendResult
             if (sendResult.isFailure) {
-                _errorMessage.value = sendResult.exceptionOrNull()?.localizedMessage ?: "Не удалось отправить сообщение"
+                val error = sendResult.exceptionOrNull()
+                Log.e("ChatViewModel", "Failed to send message to chatId: $chatId", error)
+                _errorMessage.value = error?.localizedMessage ?: "Не удалось отправить сообщение"
+            } else {
+                Log.d("ChatViewModel", "Message sent successfully to chatId: $chatId")
             }
-            // Можно скрыть _isSending
         }
     }
 
@@ -127,6 +142,4 @@ class ChatViewModel @Inject constructor(
     fun clearErrorMessage() {
         _errorMessage.value = null
     }
-
-    // getOrCreateChat здесь не нужен, он вызывается извне
 }
