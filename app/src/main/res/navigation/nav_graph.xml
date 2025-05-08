@@ -31,6 +31,21 @@
         <action
             android:id="@+id/action_myBooks_to_bookDetail"
             app:destination="@id/bookDetailFragment" />
+        <action
+            android:id="@+id/action_myBooks_to_login"
+            app:destination="@id/loginFragment"
+            app:popUpTo="@id/myBooksFragment"
+            app:popUpToInclusive="true" />
+        <!-- Добавляем недостающие действия навигации -->
+        <action
+            android:id="@+id/action_myBooks_to_home"
+            app:destination="@id/homeFragment" />
+        <action
+            android:id="@+id/action_myBooks_to_profile"
+            app:destination="@id/profileFragment" />
+        <action
+            android:id="@+id/action_myBooks_to_addBook"
+            app:destination="@id/addBookFragment" />
     </fragment>
 
     <fragment
@@ -109,18 +124,67 @@
     <fragment
         android:id="@+id/bookDetailFragment"
         android:name="com.example.bookswapkz.fragments.BookDetailFragment"
-        android:label="Book Detail"
+        android:label="Book Details"
         tools:layout="@layout/fragment_book_detail">
         <argument
             android:name="book"
             app:argType="com.example.bookswapkz.models.Book" />
+        <!-- ЭТО ДЕЙСТВИЕ ДОЛЖНО БЫТЬ ЗДЕСЬ -->
+        <action
+            android:id="@+id/action_bookDetailFragment_to_chatFragment"
+            app:destination="@id/chatFragment" />
     </fragment>
+
+    <fragment
+        android:id="@+id/chatsListFragment"
+        android:name="com.example.bookswapkz.fragments.ChatListFragment"
+        android:label="Chats"
+        tools:layout="@layout/fragment_chat_list">
+        <action
+            android:id="@+id/action_chatsList_to_chatDetail"
+            app:destination="@id/chatDetailFragment" />
+        <action
+            android:id="@+id/action_chatList_to_chatFragment"
+            app:destination="@id/chatFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/chatFragment"
+        android:name="com.example.bookswapkz.fragments.ChatFragment"
+        android:label="Чат"
+    tools:layout="@layout/fragment_chat">
+    <argument
+        android:name="chatId"
+        app:argType="string" />
+    <argument
+        android:name="userId"
+    app:argType="string" />
+    <argument
+        android:name="userName"
+    app:argType="string" />
+    <argument
+        android:name="otherUserId"
+    app:argType="string" />
+    <argument
+        android:name="otherUserName"
+    app:argType="string" />
+</fragment>
 
     <fragment
         android:id="@+id/editProfileFragment"
         android:name="com.example.bookswapkz.fragments.EditProfileFragment"
         android:label="Edit Profile"
         tools:layout="@layout/fragment_edit_profile" />
+
+    <fragment
+        android:id="@+id/chatDetailFragment"
+        android:name="com.example.bookswapkz.fragments.ChatFragment"
+        android:label="Chat"
+        tools:layout="@layout/fragment_chat_detail">
+        <argument
+            android:name="chatId"
+            app:argType="string" />
+    </fragment>
 
     <action android:id="@+id/action_global_loginFragment"
         app:destination="@id/loginFragment"

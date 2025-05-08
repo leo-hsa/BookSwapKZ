@@ -3,4 +3,4 @@
     android:shape="rectangle">
     <solid android:color="@color/book_cover_placeholder" />
     <corners android:radius="8dp" />
-</shape> 
+</shape>

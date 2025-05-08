@@ -1,32 +1,52 @@
 package com.example.bookswapkz.adapters
 
+import android.util.Log
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-
+import com.bumptech.glide.Glide
 import com.example.bookswapkz.R
-import com.example.bookswapkz.databinding.ItemBookBinding
+import com.example.bookswapkz.databinding.ItemBookBinding // <- Убедитесь, что имя совпадает с item_book.xml
 import com.example.bookswapkz.models.Book
+import com.google.firebase.auth.FirebaseAuth
 
+class BookAdapter(
+    private val onItemClicked: (Book) -> Unit
+    // Убираем вторую лямбду, так как чат открывается из деталей
+) : ListAdapter<Book, BookAdapter.BookViewHolder>(BookDiffCallback()) {
 
-class BookAdapter(private val onItemClicked: (Book) -> Unit) : ListAdapter<Book, BookAdapter.BookViewHolder>(BookDiffCallback()) {
-
-    class BookViewHolder(
-        private val binding: ItemBookBinding,
+    inner class BookViewHolder(
+        private val binding: ItemBookBinding, // <- Используем биндинг
         private val onItemClicked: (Book) -> Unit
     ) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(book: Book) {
-            binding.bookTitle.text = book.title
-            binding.bookAuthor.text = book.author
-            binding.statusChip.text = if (book.isRented) "Rented" else "Available"
-            binding.ownerName.text = "User ${book.userId}" // Temporary solution until we have user names
+            binding.titleTextView.text = book.title
+            binding.authorTextView.text = book.author
+            binding.conditionTextView.text = book.condition // TextView для состояния
+            binding.ownerCountTextView.text = book.ownerCount.toString() // Chip или TextView
+            binding.ownerNicknameTextView?.text = book.ownerNickname ?: "" // TextView для ника (nullable)
+            binding.ownerNicknameTextView?.isVisible = !book.ownerNickname.isNullOrBlank()
+            binding.cityTextView?.text = book.city // TextView для города (если есть)
 
-            binding.bookCover.setImageResource(R.drawable.book_cover_placeholder)
-            binding.bookCover.isVisible = true
+            if (!book.imageUrl.isNullOrEmpty()) {
+                binding.bookImage.let { imageView -> // Используем ID bookImage
+                    Glide.with(binding.root.context)
+                        .load(book.imageUrl)
+                        .placeholder(R.drawable.ic_book_placeholder)
+                        .error(R.drawable.ic_book_placeholder_error)
+                        .centerCrop()
+                        .into(imageView)
+                    imageView.isVisible = true
+                }
+            } else {
+                binding.bookImage.setImageResource(R.drawable.ic_book_placeholder)
+                binding.bookImage.isVisible = true
+            }
 
             binding.root.setOnClickListener {
                 onItemClicked(book)
@@ -35,6 +55,7 @@ class BookAdapter(private val onItemClicked: (Book) -> Unit) : ListAdapter<Book,
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BookViewHolder {
+        // Создаем биндинг из макета
         val binding = ItemBookBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return BookViewHolder(binding, onItemClicked)
     }
@@ -48,7 +69,6 @@ class BookDiffCallback : DiffUtil.ItemCallback<Book>() {
     override fun areItemsTheSame(oldItem: Book, newItem: Book): Boolean {
         return oldItem.id == newItem.id
     }
-
     override fun areContentsTheSame(oldItem: Book, newItem: Book): Boolean {
         return oldItem == newItem
     }
